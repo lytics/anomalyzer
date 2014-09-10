@@ -13,11 +13,11 @@ For example, an input vector of `[1, 2, 3, 4, 5, 6, 7, 8, 9]`, and an active win
 
 Anomalizer can implement one or more of the following algorithmic tests:
 
-1) **diff**: Compares the differences in the behavior in the active window to the cumulative distribution function of the reference window.
-2) **rank**: Performs a bootstrap permutation test on the ranks of the differences in both windows, in the flavor of a [Mann-Whitney](http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U_test) test.
-3) **magnitude**: Compares the relative magnitude of the difference between the averages of the active window and the reference window.
-4) **fence**: Indicates that data are approaching a configurable upper and lower bound.
-5) **ks**: An *experimental* [Kolmogorov-Smirnov](http://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test) test on the difference between the active window and the reference window that yields an *approximate* p-value.
+1. **diff**: Compares the differences in the behavior in the active window to the cumulative distribution function of the reference window.
+2. **rank**: Performs a bootstrap permutation test on the ranks of the differences in both windows, in the flavor of a [Mann-Whitney](http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U_test) test.
+3. **magnitude**: Compares the relative magnitude of the difference between the averages of the active window and the reference window.
+4. **fence**: Indicates that data are approaching a configurable upper and lower bound.
+5. **ks**: An *experimental* [Kolmogorov-Smirnov](http://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test) test on the difference between the active window and the reference window that yields an *approximate* p-value.
 
 Each test yields a probability of anomalous behavior, and the probabilities are then computed over a weighted mean to determine if the overall behavior is anomalous.  Since a *probability* is returned, the user may determine the sensitivity of the decision, and can determine the threshold for anomalous behavior for the application, whether at say 0.8 for general anomalous behavior or 0.95 for extreme anomalous behavior.
 
@@ -44,10 +44,11 @@ The rank test can accept a value for the number of bootstrap samples to generate
 package main
 
 import (
+	"fmt"
 	anomalize "github.com/lytics/vicious-warthog"
 )
 
-func AnomalizerExample() error {
+func main() {
 	conf := &anomalize.AnomalizerConf{
 		UpperBound:    5,
 		LowerBound:    0,
@@ -59,17 +60,14 @@ func AnomalizerExample() error {
 	// initialize with empty data or an actual slice of floats
 	data := []float64{0.1, 2.05, 1.5, 2.5, 2.6, 2.55}
 
-	anomalizer, err := anomalize.NewAnomalizer(conf, data)
-	if err != nil {
-		return err
-	}
+	anomalizer, _ := anomalize.NewAnomalizer(conf, data)
 
 	// the push method automatically triggers a recalcuation of the
 	// anomaly probability.  The recalculation can also be triggered
 	// by a call to the Eval method.
 	prob := anomalizer.Push(8.0)
-	
-	return nil
+
+	fmt.Println("Anomalous Probability:", prob)
 }
 
 ```
