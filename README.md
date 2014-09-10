@@ -1,5 +1,7 @@
 
-Anomalizer in Go
+# Anomalizer
+
+Probability-based anomaly detection in Go.
 
 ![anomaly2](https://cloud.githubusercontent.com/assets/6633242/4197767/d564fd66-37ee-11e4-9093-695227ebe217.png)
 ![anomaly4](https://cloud.githubusercontent.com/assets/6633242/4197802/5674a906-37ef-11e4-94b1-c1dd808363d3.png)
