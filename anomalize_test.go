@@ -1,87 +1,43 @@
 package anomalize
 
 import (
-	"fmt"
 	"github.com/bmizerany/assert"
-	"math"
+	"github.com/drewlanenga/govector"
+	"math/rand"
 	"testing"
 )
 
-func TestRandomWalk(t *testing.T) {
-	walk, err := RandomWalk(10, 0.5, 0.05)
-	fmt.Println(walk)
+// Generates a random walk given the number of steps desired, a starting point,
+// and the desired standard deviation.
+func randomWalk(nsteps int, start float64, sd float64) (govector.Vector, error) {
+	walk := make(govector.Vector, nsteps)
+	walk[0] = float64(start)
 
-	assert.Equal(t, nil, err, "Error generating random walk")
+	i := 1
+	for i < nsteps {
+		step := rand.NormFloat64() * sd
+		walk[i] = cap(walk[i-1]+step, 0.0, 1.0)
+
+		i++
+	}
+	return walk, nil
 }
 
-func TestPtoProb(t *testing.T) {
-	prob, err := PtoProb(0.25)
-	fmt.Println(prob)
+func TestAnomalizer(t *testing.T) {
+	conf := &AnomalizerConf{
+		UpperBound:    5,
+		LowerBound:    0,
+		ActiveSize:    1,
+		ReferenceSize: 4,
+		Methods:       []string{"diff", "fence", "rank", "magnitude"},
+	}
 
-	assert.Equal(t, nil, err, "Error in calculating prob given p")
-}
+	// initialize with empty data or an actual slice of floats
+	data := []float64{0.1, 2.05, 1.5, 2.5, 2.6, 2.55}
 
-func TestCap(t *testing.T) {
-	capp, err := Cap(200.0, 0.0, 100.0)
+	anomalizer, err := NewAnomalizer(conf, data)
+	assert.Equal(t, nil, err, "Error initializing new anomalizer")
 
-	assert.Equal(t, nil, err, "Error in calculating cap")
-	assert.Equal(t, 100.0, capp, "Error in calculating cap")
-}
-
-func TestRank(t *testing.T) {
-	vector, err := RandomWalk(100, 0.5, 0.0)
-	score, err := Rank(vector)
-
-	// For no standard deviation, the random walk should stand still and
-	// a rank test will return 0. For any other standard deviations, the
-	// result of the rank test is somewhat random.
-	assert.Equal(t, nil, err, "Error in calculating rank")
-	assert.Equal(t, score, 0.0, "Error in calculating rank")
-}
-
-func TestDiffCDF(t *testing.T) {
-	vector, err := RandomWalk(20, 0.2, 0.05)
-	score, err := DiffCDF(vector)
-	fmt.Println(score)
-
-	assert.Equal(t, nil, err, "Error in calculating diffCDF")
-}
-
-func TestProb(t *testing.T) {
-	vector, err := RandomWalk(20, 0.5, 0.9)
-	score, err := Prob(vector)
-	fmt.Println(score)
-
-	assert.Equal(t, nil, err, "Error in calculating percent diff")
-}
-
-func TestKS(t *testing.T) {
-	// A random walk with no standard deviation will return a KS score
-	// of zero.
-	vector, err := RandomWalk(100, 10000, 0.0)
-	score, err := KS(vector)
-	score = math.Floor(score)
-
-	assert.Equal(t, 0.0, score, "Error in calculating KS score")
-	assert.Equal(t, nil, err, "Error in calculating KS score")
-}
-
-func TestBounds(t *testing.T) {
-	// A random walk around 0.5 should return a relatively low bounds
-	// score, since the larger the deviation from the mean of the upper
-	// and lower bounds (0.5 in this case), the larger the result of
-	// bounds is.
-	vector, err := RandomWalk(20, 0.5, 0.005)
-	score, err := Bounds(vector)
-	fmt.Println(score)
-
-	assert.Equal(t, nil, err, "Error in calculating bounds score")
-
-	// Here's a random walk that will return a higher bounds score since
-	// it hovers around the lower bound.
-	vector, err = RandomWalk(20, 0.05, 0.005)
-	score, err = Bounds(vector)
-	fmt.Println(score)
-
-	assert.Equal(t, nil, err, "Error in calculating bounds score")
+	prob := anomalizer.Push(8.0)
+	assert.Tf(t, prob > 0.5, "Anomalizer returned a probability that was too small")
 }

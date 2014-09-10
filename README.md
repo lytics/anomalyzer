@@ -1,23 +1,75 @@
 
-Anomalizer in Go
+# Anomalizer
 
-![anomaly2](https://cloud.githubusercontent.com/assets/6633242/4197767/d564fd66-37ee-11e4-9093-695227ebe217.png)
-![anomaly4](https://cloud.githubusercontent.com/assets/6633242/4197802/5674a906-37ef-11e4-94b1-c1dd808363d3.png)
+Probability-based anomaly detection in Go.
 
-This code returns the probability that a given time series contains anomalous behavior using four different statistical tests. At the beginning of the code, the length of an "active" window (the window over which we want to investigate anomalous behavior) is specified. The data that comes before the active window is considered the "reference" for our test
+## Windows
 
-The tests are:
+Anomalizer implements a suite of statistical tests that yield the probability that a given set of numeric input, typically a time series, contains anomalous behavior.  Each test compares the behavior in an **active window** or one or more points to the behavior in a **reference window** of two or more points.
 
-	1) "Prob" -> Calculates the percent difference between the averages of the reference and active data sets.
+For example, an input vector of `[1, 2, 3, 4, 5, 6, 7, 8, 9]`, and an active window length of 1 and a reference window length of 4, would yield an active window of `[9]` and a reference window of `[5, 6, 7, 8]`.
 
-	2) "Rank" -> Implements a boostrap permutation test.
+## Algorithms
 
-	3) "DiffCDF" -> Compares the cumulative distribution functions of the active and reference windows.
+Anomalizer can implement one or more of the following algorithmic tests:
 
-	4) "Bounds" -> Flags data that is moving close to an upper or lower bound (which can be specified at the top of the code).
+1) **diff**: Compares the differences in the behavior in the active window to the cumulative distribution function of the reference window.
+2) **rank**: Performs a bootstrap permutation test on the ranks of the differences in both windows, in the flavor of a [Mann-Whitney](http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U_test) test.
+3) **magnitude**: Compares the relative magnitude of the difference between the averages of the active window and the reference window.
+4) **fence**: Indicates that data are approaching a configurable upper and lower bound.
+5) **ks**: An *experimental* [Kolmogorov-Smirnov](http://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test) test on the difference between the active window and the reference window that yields an *approximate* p-value.
 
-Additionally, a weighted sum is implemented. It is suggested that the weights be changed to the user's liking and/or depending on the lengths of the reference window considered.
+Each test yields a probability of anomalous behavior, and the probabilities are then computed over a weighted mean to determine if the overall behavior is anomalous.  Since a *probability* is returned, the user may determine the sensitivity of the decision, and can determine the threshold for anomalous behavior for the application, whether at say 0.8 for general anomalous behavior or 0.95 for extreme anomalous behavior.
 
-After considering reference windows of different lengths, it appears that the Rank test is slightly more sensitive over a longer reference window, Prob over a shorter reference window, and DiffCDF is generally applicable when both shorter and larger reference windows are considered.
+## Configuration
 
-(Kilmogorov-Smirnov is also implemented in the code, but its result is not shown or considered part of the weighted sum.)
+Any of the tests can be included in the anomalizer, and if none are supplied in the configuration, default to magnitude and diff.  Methods are supplied through the `Methods` value in the configuration and accepts a slice of strings for the method names.
+
+The values for `ActiveSize` and `ReferenceSize` are also required and must be a minimum of 1 and 2, respectively.
+
+After considering reference windows of different lengths, it appears that the **rank** test is slightly more sensitive over a longer reference window, **magnitude** over a shorter reference window, and **diff** is generally applicable when both shorter and larger reference windows are considered.
+
+### Fence
+
+The fence test can be configured to use custom `UpperBound` and `LowerBound` values for the fences.  If no lower bound is desired, set the value of `LowerBound` to `anomalizer.NA`.
+
+## Rank
+
+The rank test can accept a value for the number of bootstrap samples to generate, indicated by `PermCount`, and defaults to 500 if not set.
+
+
+## Example
+
+```go
+package main
+
+import (
+	anomalize "github.com/lytics/vicious-warthog"
+)
+
+func AnomalizerExample() error {
+	conf := &anomalize.AnomalizerConf{
+		UpperBound:    5,
+		LowerBound:    0,
+		ActiveSize:    1,
+		ReferenceSize: 4,
+		Methods:       []string{"diff", "fence", "rank", "magnitude"},
+	}
+
+	// initialize with empty data or an actual slice of floats
+	data := []float64{0.1, 2.05, 1.5, 2.5, 2.6, 2.55}
+
+	anomalizer, err := anomalize.NewAnomalizer(conf, data)
+	if err != nil {
+		return err
+	}
+
+	// the push method automatically triggers a recalcuation of the
+	// anomaly probability.  The recalculation can also be triggered
+	// by a call to the Eval method.
+	prob := anomalizer.Push(8.0)
+	
+	return nil
+}
+
+```
