@@ -25,7 +25,6 @@ func randomWalk(nsteps int, start float64, sd float64) (govector.Vector, error) 
 
 func TestAnomalizer(t *testing.T) {
 	conf := &AnomalizerConf{
-		Sensitivity:   0.5,
 		UpperBound:    5,
 		LowerBound:    0,
 		ActiveSize:    1,
@@ -33,7 +32,7 @@ func TestAnomalizer(t *testing.T) {
 		Methods:       []string{"diff", "fence", "rank", "magnitude"},
 	}
 
-	// initialize with empty data now
+	// initialize with empty data or an actual slice of floats
 	data := []float64{0.1, 2.05, 1.5, 2.5, 2.6, 2.55}
 
 	anomalizer, err := NewAnomalizer(conf, data)

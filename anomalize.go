@@ -11,7 +11,7 @@ const (
 )
 
 type AnomalizerConf struct {
-	Sensitivity   float64
+	//Sensitivity   float64
 	UpperBound    float64
 	LowerBound    float64
 	ActiveSize    int
@@ -49,10 +49,12 @@ func validateConf(conf *AnomalizerConf) error {
 		return fmt.Errorf("Active and reference window sizes must be at least of size 1")
 	}
 
-	// validation for the magnitude test
-	if conf.Sensitivity < 0 || conf.Sensitivity > 1 {
-		return fmt.Errorf("Sensitivity must be between 0 and 1, %v given", conf.Sensitivity)
-	}
+	/*
+		// validation for the magnitude test
+		if conf.Sensitivity < 0 || conf.Sensitivity > 1 {
+			return fmt.Errorf("Sensitivity must be between 0 and 1, %v given", conf.Sensitivity)
+		}
+	*/
 
 	// validation for the fence test
 	if exists("fence", conf.Methods) {
