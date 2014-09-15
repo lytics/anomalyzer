@@ -79,7 +79,6 @@ func FenceTest(vector govector.Vector, conf AnomalizerConf) float64 {
 
 		distance = (math.Abs(x - mid)) / bound
 	}
-
 	return weightExp(cap(distance, 0, 1), 10)
 }
 
