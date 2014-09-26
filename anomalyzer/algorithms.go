@@ -1,4 +1,4 @@
-package anomalize
+package anomalyze
 
 import (
 	"github.com/drewlanenga/govector"
@@ -6,7 +6,7 @@ import (
 	"sort"
 )
 
-type Algorithm func(govector.Vector, AnomalizerConf) float64
+type Algorithm func(govector.Vector, AnomalyzerConf) float64
 
 var (
 	Algorithms = map[string]Algorithm{
@@ -60,7 +60,7 @@ func extractWindows(vector govector.Vector, refSize, activeSize int) (govector.V
 
 // This function can be used to test whether or not data is getting close to a
 // specified upper or lower bound.
-func FenceTest(vector govector.Vector, conf AnomalizerConf) float64 {
+func FenceTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	// we don't really care about a reference window for this one
 	_, active := extractWindows(vector, conf.ReferenceSize, conf.ActiveSize)
 
@@ -92,7 +92,7 @@ func weightExp(x, base float64) float64 {
 // Generates permutations of reference and active window values to determine
 // whether or not data is anomalous. The number of permutations desired has
 // been set to 500 but can be increased for more precision.
-func RankTest(vector govector.Vector, conf AnomalizerConf) float64 {
+func RankTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	// Find the differences between neighboring elements and rank those differences.
 	ranks := vector.Diff().Apply(math.Abs).Rank()
 
@@ -128,7 +128,7 @@ func RankTest(vector govector.Vector, conf AnomalizerConf) float64 {
 
 // Generates the cumulative distribution function using the difference in the means
 // for the data.
-func DiffCDFTest(vector govector.Vector, conf AnomalizerConf) float64 {
+func DiffCDFTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	diffs := vector.Diff().Apply(math.Abs)
 	reference, active := extractWindows(diffs, conf.ReferenceSize-1, conf.ActiveSize)
 
@@ -147,7 +147,7 @@ func DiffCDFTest(vector govector.Vector, conf AnomalizerConf) float64 {
 
 // Generates the percent difference between the means of the reference and active
 // data. Returns a value scaled such that it lies between 0 and 1.
-func MagnitudeTest(vector govector.Vector, conf AnomalizerConf) float64 {
+func MagnitudeTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	reference, active := extractWindows(vector, conf.ReferenceSize, conf.ActiveSize)
 
 	activeMean := active.Mean()
@@ -166,7 +166,7 @@ func MagnitudeTest(vector govector.Vector, conf AnomalizerConf) float64 {
 // Implements the Kolmogorv-Smirnov test. The p-score returned is not consistent
 // results obtained in R, but is consistent with results from the skyline package
 // (https://github.com/etsy/skyline).
-func KSTest(vector govector.Vector, conf AnomalizerConf) float64 {
+func KSTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	reference, active := extractWindows(vector, conf.ReferenceSize, conf.ActiveSize)
 
 	n1 := len(reference)

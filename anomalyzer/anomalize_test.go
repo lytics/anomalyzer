@@ -1,4 +1,4 @@
-package anomalize
+package anomalyze
 
 import (
 	"github.com/bmizerany/assert"
@@ -23,8 +23,8 @@ func randomWalk(nsteps int, start float64, sd float64) (govector.Vector, error) 
 	return walk, nil
 }
 
-func TestAnomalizer(t *testing.T) {
-	conf := &AnomalizerConf{
+func TestAnomalyzer(t *testing.T) {
+	conf := &AnomalyzerConf{
 		UpperBound:    5,
 		LowerBound:    0,
 		ActiveSize:    3,
@@ -36,12 +36,9 @@ func TestAnomalizer(t *testing.T) {
 	data := []float64{0.1, 2.05, 1.5, 2.5, 2.6, 2.55}
 	//data := []float64{0.1, 0.2, 0.15, 0.25, 0.3, 0.275}
 
-	anomalizer, err := NewAnomalizer(conf, data)
-	assert.Equal(t, nil, err, "Error initializing new anomalizer")
+	anomalyzer, err := NewAnomalyzer(conf, data)
+	assert.Equal(t, nil, err, "Error initializing new anomalyzer")
 
-	prob := anomalizer.Push(8.0)
-	assert.Tf(t, prob > 0.5, "Anomalizer returned a probability that was too small")
-
-	_, err = anomalizer.CausalImpact()
-	assert.Equal(t, nil, err, "Error generating causal impact score")
+	prob := anomalyzer.Push(8.0)
+	assert.Tf(t, prob > 0.5, "Anomalyzer returned a probability that was too small")
 }

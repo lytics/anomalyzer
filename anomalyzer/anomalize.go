@@ -1,20 +1,16 @@
-package anomalize
+package anomalyze
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/drewlanenga/govector"
 	"math"
-	"os/exec"
-	"strconv"
-	"strings"
 )
 
 const (
 	NA = math.SmallestNonzeroFloat64
 )
 
-type AnomalizerConf struct {
+type AnomalyzerConf struct {
 	//Sensitivity   float64
 	UpperBound    float64
 	LowerBound    float64
@@ -24,12 +20,12 @@ type AnomalizerConf struct {
 	Methods       []string
 }
 
-type Anomalizer struct {
-	Conf *AnomalizerConf
+type Anomalyzer struct {
+	Conf *AnomalyzerConf
 	Data govector.Vector
 }
 
-func validateConf(conf *AnomalizerConf) error {
+func validateConf(conf *AnomalyzerConf) error {
 	// if supplied, make sure the detection methods are supported
 	supportedMethods := []string{"magnitude", "diff", "rank", "fence", "ks"}
 	minimumMethods := []string{"magnitude", "diff"}
@@ -102,21 +98,27 @@ func exists(needle string, haystack []string) bool {
 	return index(needle, haystack) > -1
 }
 
-func NewAnomalizer(conf *AnomalizerConf, data []float64) (Anomalizer, error) {
+func NewAnomalyzer(conf *AnomalyzerConf, data []float64) (Anomalyzer, error) {
 	err := validateConf(conf)
 	if err != nil {
-		return Anomalizer{}, err
+		return Anomalyzer{}, err
 	}
 
 	vector, err := govector.AsVector(data)
 	if err != nil {
-		return Anomalizer{}, err
+		return Anomalyzer{}, err
 	}
 
-	return Anomalizer{conf, vector}, nil
+	return Anomalyzer{conf, vector}, nil
 }
 
-func (a Anomalizer) Push(x float64) float64 {
+func (a *Anomalyzer) Update(x []float64) {
+	for _, val := range x {
+		a.Data.Push(val)
+	}
+}
+
+func (a Anomalyzer) Push(x float64) float64 {
 	// add the new point to the data
 	a.Data.Push(x)
 
@@ -124,49 +126,10 @@ func (a Anomalizer) Push(x float64) float64 {
 	return a.Eval()
 }
 
-// Implementation of github.com/google/CausalImpact code
-func (a Anomalizer) CausalImpact() (float64, error) {
-	// convert the data and window size to strings for the
-	// command line
-	datastr := make([]string, len(a.Data))
-	datastr[0] = strconv.FormatFloat(a.Data[0], 'f', 4, 64)
-	i := 1
-	for i < len(a.Data) {
-		datastr[i] = strconv.FormatFloat(a.Data[i], 'f', 3, 64)
-		i++
-	}
-	datastring := strings.Join(datastr, ",")
-	timestring := strconv.Itoa(a.Conf.ReferenceSize)
-
-	// execute the R script which runs "Causal Impact"
-	out, err := exec.Command("./impact.r", datastring, timestring).Output()
-	if err != nil {
-		return math.NaN(), err
-	}
-
-	// define a struct which will include the JSON outputs
-	// of that R script
-	type Routput struct {
-		Lower float64 `json:"lower"`
-		Upper float64 `json:"upper"`
-		P     float64 `json:"p"`
-	}
-
-	// unmarshal the JSON outputs
-	var routputs Routput
-	err = json.Unmarshal(out, &routputs)
-	if err != nil {
-		return math.NaN(), err
-	}
-
-	// return just the "posterior probability of causal effect"
-	return (1 - routputs.P), nil
-}
-
 // Return the weighted average of four statistical tests
 // for anomaly detection and return the probability that
 // a behavior is anomalous.
-func (a Anomalizer) Eval() float64 {
+func (a Anomalyzer) Eval() float64 {
 
 	probs := make(govector.Vector, len(a.Conf.Methods))
 
@@ -174,18 +137,24 @@ func (a Anomalizer) Eval() float64 {
 		algorithm := Algorithms[method]
 		probs[i] = cap(algorithm(a.Data, *a.Conf), 0, 1)
 	}
-
 	// ignore the error since the length of probs and
 	// the weights will always be equal
 
 	weights := a.getWeights(probs)
 	weighted, _ := probs.WeightedMean(weights)
+
+	// if all the weights are zero, then our weighted mean
+	// function attempts to divide by zero which returns a
+	// NaN. we'd like it to return 0.
+	if math.IsNaN(weighted) {
+		weighted = 0
+	}
 	return weighted
 }
 
 // Use essentially similar weights.  However, if either the magnitude
 // or fence methods have high probabilities, upweight them significantly.
-func (a Anomalizer) getWeights(probs govector.Vector) govector.Vector {
+func (a Anomalyzer) getWeights(probs govector.Vector) govector.Vector {
 	nmethods := len(a.Conf.Methods)
 	weights := make(govector.Vector, nmethods)
 	i := 0
