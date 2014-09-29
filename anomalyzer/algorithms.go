@@ -159,7 +159,7 @@ func MagnitudeTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 		return 1
 	}
 
-	pdiff := (activeMean - refMean) / refMean
+	pdiff := math.Abs(activeMean - refMean) / refMean
 	return weightExp(pdiff, 10)
 }
 
