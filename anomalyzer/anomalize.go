@@ -39,6 +39,11 @@ func validateConf(conf *AnomalyzerConf) error {
 		}
 	}
 
+	// if reference window is not specified, make it some multiple of the active window size
+	if conf.ReferenceSize == 0 {
+		conf.ReferenceSize = 3 * conf.ActiveSize
+	}
+
 	// reference window must be at least of size 2 (for difference methods)
 	if conf.ReferenceSize < 2 {
 		return fmt.Errorf("Reference window must be at least of size 2, (%d) given", conf.ReferenceSize)
