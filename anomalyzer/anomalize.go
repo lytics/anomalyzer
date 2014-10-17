@@ -68,7 +68,7 @@ func validateConf(conf *AnomalyzerConf) error {
 	}
 
 	// validation for the rank test
-	if exists("rank", conf.Methods) {
+	if exists("rank", conf.Methods) || exists("ks", conf.Methods) {
 		if conf.PermCount == 0 {
 			conf.PermCount = 500
 		}

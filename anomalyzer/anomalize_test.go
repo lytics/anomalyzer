@@ -34,7 +34,6 @@ func TestAnomalyzer(t *testing.T) {
 
 	// initialize with empty data or an actual slice of floats
 	data := []float64{0.1, 2.05, 1.5, 2.5, 2.6, 2.55}
-	//data := []float64{0.1, 0.2, 0.15, 0.25, 0.3, 0.275}
 
 	anomalyzer, err := NewAnomalyzer(conf, data)
 	assert.Equal(t, nil, err, "Error initializing new anomalyzer")

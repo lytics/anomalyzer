@@ -17,7 +17,7 @@ Anomalyzer can implement one or more of the following algorithmic tests:
 2. **rank**: Performs a bootstrap permutation test on the ranks of the differences in both windows, in the flavor of a [Mann-Whitney](http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U_test) test.
 3. **magnitude**: Compares the relative magnitude of the difference between the averages of the active window and the reference window.
 4. **fence**: Indicates that data are approaching a configurable upper and lower bound.
-5. **ks**: An *experimental* [Kolmogorov-Smirnov](http://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test) test on the difference between the active window and the reference window that yields an *approximate* p-value.
+5. **bootstrap ks**: Calculates the [Kolmogorov-Smirnov](http://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test) test over active and reference windows and compares that value to KS test scores obtained after permuting all elements in the set
 
 Each test yields a probability of anomalous behavior, and the probabilities are then computed over a weighted mean to determine if the overall behavior is anomalous.  Since a *probability* is returned, the user may determine the sensitivity of the decision, and can determine the threshold for anomalous behavior for the application, whether at say 0.8 for general anomalous behavior or 0.95 for extreme anomalous behavior.
 
@@ -27,13 +27,17 @@ Any of the tests can be included in the anomalyzer, and if none are supplied in 
 
 The values for `ActiveSize` and `ReferenceSize` are also required and must be a minimum of 1 and 2, respectively.
 
-After considering reference windows of different lengths, it appears that the **rank** test is slightly more sensitive over a longer reference window, **magnitude** over a shorter reference window, and **diff** is generally applicable when both shorter and larger reference windows are considered.
+After considering reference windows of different lengths, it appears that the **rank** test is slightly more sensitive over a longer reference window, **magnitude** over a shorter reference window, and **diff** is generally applicable when both shorter and larger reference windows are considered. 
+
+### Bootstrap KS
+
+To capture seasonality, **bootstrap ks** should consider an active window equal to a season/period and a reference window equal to more than one season/period. 
 
 ### Fence
 
 The fence test can be configured to use custom `UpperBound` and `LowerBound` values for the fences.  If no lower bound is desired, set the value of `LowerBound` to `anomalizer.NA`.
 
-## Rank
+### Rank
 
 The rank test can accept a value for the number of bootstrap samples to generate, indicated by `PermCount`, and defaults to 500 if not set.
 

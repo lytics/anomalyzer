@@ -14,7 +14,7 @@ var (
 		"rank":      RankTest,
 		"diff":      DiffCDFTest,
 		"fence":     FenceTest,
-		"ks":        KSTest,
+		"ks":        BootstrapKSTest,
 	}
 )
 
@@ -149,7 +149,6 @@ func DiffCDFTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 // data. Returns a value scaled such that it lies between 0 and 1.
 func MagnitudeTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	reference, active := extractWindows(vector, conf.ReferenceSize, conf.ActiveSize)
-
 	activeMean := active.Mean()
 	refMean := reference.Mean()
 
@@ -159,7 +158,7 @@ func MagnitudeTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 		return 1
 	}
 
-	pdiff := (activeMean - refMean) / refMean
+	pdiff := math.Abs(activeMean-refMean) / refMean
 	return weightExp(pdiff, 10)
 }
 
@@ -195,9 +194,25 @@ func KSTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 		d = math.Max(d, math.Abs(activeDist[i]-refDist[i]))
 	}
 
-	en := math.Sqrt(float64(n1*n2) / float64(n1+n2))
-	prob := kolmogorov((en + 0.12 + 0.11/en) * d)
-	return (1 - prob)
+	return d
+}
+
+func BootstrapKSTest(vector govector.Vector, conf AnomalyzerConf) float64 {
+	dist := KSTest(vector, conf)
+
+	i := 0
+	significant := 0
+
+	for i < conf.PermCount {
+		permVector := vector.Shuffle()
+		permDist := KSTest(permVector, conf)
+
+		if permDist < dist {
+			significant++
+		}
+		i++
+	}
+	return float64(significant) / float64(conf.PermCount)
 }
 
 // A helper function for KS that rescales a vector to the desired length npoints.
@@ -213,30 +228,4 @@ func interpolate(vector govector.Vector, npoints int) govector.Vector {
 		i++
 	}
 	return interp
-}
-
-// A helper function to calculate the KS test statistic.
-// Reference: scipy/special/cephes/kolmogorov.c
-func kolmogorov(y float64) float64 {
-	if y < 1.1e-16 {
-		return 1.0
-	}
-	x := -2.0 * y * y
-	sign := 1.0
-	p := 0.0
-	r := 1.0
-	var t float64
-	for {
-		t = math.Exp(x * r * r)
-		p += sign * t
-		if t == 0.0 {
-			break
-		}
-		r += 1.0
-		sign = -sign
-		if (t / p) <= 1.1e-16 {
-			break
-		}
-	}
-	return (p + p)
 }

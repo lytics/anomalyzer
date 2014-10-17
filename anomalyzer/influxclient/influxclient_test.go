@@ -12,10 +12,10 @@ import (
 
 func makeClient() InfluxAnomalyClient {
 	defaults := &influx.ClientConfig{
-		Host:       "localhost:8086",
+		Host:       "192.168.115.68:8086",
 		Username:   "root",
 		Password:   "root",
-		Database:   "SampleCPU",
+		Database:   "lytics",
 		HttpClient: http.DefaultClient,
 	}
 	client, err := influx.NewClient(defaults)
