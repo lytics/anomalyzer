@@ -33,11 +33,14 @@ func makeClient() InfluxAnomalyClient {
 	}
 	anom, _ := anomalyzer.NewAnomalyzer(conf, nil)
 
+	duration, _ := time.ParseDuration("1h")
+
 	anomalyClient := InfluxAnomalyClient{
-		Client:     client,
-		Anomalyzer: &anom,
-		Table:      "metd.lio5.elasticsearch.cpu.avg",
-		Updated:    time.Now(),
+		Client:      client,
+		Anomalyzer:  &anom,
+		Table:       "metd.lio5.elasticsearch.cpu.avg",
+		Updated:     time.Now(),
+		Granularity: duration,
 	}
 	return anomalyClient
 }
