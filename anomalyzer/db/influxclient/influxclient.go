@@ -8,18 +8,16 @@ import (
 	"time"
 )
 
-type AnomalyClient interface {
-	Get(timestamp int64) ([]float64, error)
-	Update([]float64) error
-	GetAndUpdate(timestamp int64) error
-	Eval() float64
-}
+const (
+	TIME_LAYOUT = "2006-01-02 15:04:05.999"
+)
 
 type InfluxAnomalyClient struct {
-	Client     *influx.Client
-	Anomalyzer *anomalyze.Anomalyzer
-	Table      string
-	Updated    time.Time
+	Client      *influx.Client
+	Anomalyzer  *anomalyze.Anomalyzer
+	Table       string
+	Granularity time.Duration
+	Updated     time.Time
 }
 
 // get data from influx
@@ -28,7 +26,8 @@ func (c *InfluxAnomalyClient) Get() ([]float64, error) {
 	sampleSize := c.Anomalyzer.Conf.ActiveSize + c.Anomalyzer.Conf.ReferenceSize
 	// this query selects the most recent data points over the past day
 	// using a "where" avoids scanning the whole set of data
-	query := fmt.Sprintf("select * from %s where time > now() - 1d limit %v", c.Table, sampleSize)
+	updated := c.Updated.Format(TIME_LAYOUT)
+	query := fmt.Sprintf("select * from %s where time > '%s' group by time(%s) limit %v", c.Table, updated, c.Granularity.String(), sampleSize)
 
 	series, err := c.Client.QueryWithNumbers(query)
 	if err != nil {
