@@ -25,7 +25,8 @@ type InfluxAnomalyClient struct {
 // get data from influx
 func (c *InfluxAnomalyClient) Get() ([]float64, error) {
 	// the number of elements we want to grab
-	sampleSize := c.Anomalyzer.Conf.ActiveSize + c.Anomalyzer.Conf.ReferenceSize
+	referenceSize := c.Anomalyzer.Conf.NSeasons * c.Anomalyzer.Conf.ActiveSize
+	sampleSize := c.Anomalyzer.Conf.ActiveSize + referenceSize
 	// this query selects the most recent data points over the past day
 	// using a "where" avoids scanning the whole set of data
 	query := fmt.Sprintf("select * from %s where time > now() - 1d limit %v", c.Table, sampleSize)

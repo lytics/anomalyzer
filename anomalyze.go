@@ -15,7 +15,8 @@ type AnomalyzerConf struct {
 	UpperBound    float64
 	LowerBound    float64
 	ActiveSize    int
-	ReferenceSize int
+	referenceSize int
+	NSeasons      int
 	PermCount     int
 	Methods       []string
 }
@@ -27,8 +28,8 @@ type Anomalyzer struct {
 
 func validateConf(conf *AnomalyzerConf) error {
 	// if supplied, make sure the detection methods are supported
-	supportedMethods := []string{"magnitude", "diff", "rank", "fence", "ks"}
-	minimumMethods := []string{"magnitude", "diff"}
+	supportedMethods := []string{"magnitude", "diff", "rank", "fence", "ks", "cdf"}
+	minimumMethods := []string{"magnitude", "ks"}
 	if conf.Methods == nil {
 		conf.Methods = minimumMethods
 	} else {
@@ -39,19 +40,19 @@ func validateConf(conf *AnomalyzerConf) error {
 		}
 	}
 
-	// if reference window is not specified, make it some multiple of the active window size
-	if conf.ReferenceSize == 0 {
-		conf.ReferenceSize = 3 * conf.ActiveSize
+	// if number of seasons are not specified, default it to 4
+	if conf.NSeasons == 0 {
+		conf.NSeasons = 4
 	}
 
-	// reference window must be at least of size 2 (for difference methods)
-	if conf.ReferenceSize < 2 {
-		return fmt.Errorf("Reference window must be at least of size 2, (%d) given", conf.ReferenceSize)
+	// make reference window some multiple of the active window size
+	if conf.referenceSize == 0 {
+		conf.referenceSize = conf.NSeasons * conf.ActiveSize
 	}
 
 	// window sizes must be positive ints
-	if conf.ActiveSize < 1 || conf.ReferenceSize < 1 {
-		return fmt.Errorf("Active and reference window sizes must be at least of size 1")
+	if conf.ActiveSize < 1 {
+		return fmt.Errorf("Active window size must be at least of size 1")
 	}
 
 	/*
@@ -73,16 +74,9 @@ func validateConf(conf *AnomalyzerConf) error {
 	}
 
 	// validation for the rank test
-	if exists("rank", conf.Methods) || exists("ks", conf.Methods) {
+	if exists("rank", conf.Methods) || exists("ks", conf.Methods) || exists("diff", conf.Methods) {
 		if conf.PermCount == 0 {
 			conf.PermCount = 500
-		}
-	}
-
-	// validation for diff test
-	if exists("diff", conf.Methods) {
-		if conf.ReferenceSize < 4 {
-			return fmt.Errorf("The Difference method requires a minimum reference window of 4 points, (%v) given", conf.ReferenceSize)
 		}
 	}
 

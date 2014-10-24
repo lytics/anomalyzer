@@ -1,6 +1,7 @@
 package anomalyze
 
 import (
+	"fmt"
 	"github.com/bmizerany/assert"
 	"github.com/drewlanenga/govector"
 	"math/rand"
@@ -25,11 +26,11 @@ func randomWalk(nsteps int, start float64, sd float64) (govector.Vector, error) 
 
 func TestAnomalyzer(t *testing.T) {
 	conf := &AnomalyzerConf{
-		UpperBound:    5,
-		LowerBound:    0,
-		ActiveSize:    3,
-		ReferenceSize: 4,
-		Methods:       []string{"diff", "fence", "rank", "magnitude"},
+		UpperBound: 5,
+		LowerBound: 0,
+		ActiveSize: 1,
+		NSeasons:   4,
+		Methods:    []string{"cdf", "fence", "rank", "magnitude"},
 	}
 
 	// initialize with empty data or an actual slice of floats
@@ -39,5 +40,6 @@ func TestAnomalyzer(t *testing.T) {
 	assert.Equal(t, nil, err, "Error initializing new anomalyzer")
 
 	prob := anomalyzer.Push(8.0)
+	fmt.Println(prob)
 	assert.Tf(t, prob > 0.5, "Anomalyzer returned a probability that was too small")
 }
