@@ -55,6 +55,10 @@ func validateConf(conf *AnomalyzerConf) error {
 		return fmt.Errorf("Active window size must be at least of size 1")
 	}
 
+	if conf.referenceSize < 4 {
+		return fmt.Errorf("Number of seasons must be greater than %v", conf.NSeasons)
+	}
+
 	/*
 		// validation for the magnitude test
 		if conf.Sensitivity < 0 || conf.Sensitivity > 1 {

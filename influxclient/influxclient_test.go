@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/bmizerany/assert"
 	influx "github.com/influxdb/influxdb/client"
-	anomalyzer "github.com/lytics/anomalyzer/anomalyzer"
+	anomalyzer "github.com/lytics/anomalyzer"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -53,8 +53,8 @@ func makeClient() InfluxAnomalyClient {
 		// this upper bound reflects 30% CPU Usage
 		UpperBound: 30,
 		LowerBound: anomalyzer.NA,
-		ActiveSize: 20,
-		NSeasons:   4,
+		ActiveSize: 100,
+		NSeasons:   1,
 		Methods:    []string{"rank", "fence", "magnitude"},
 	}
 	anom, _ := anomalyzer.NewAnomalyzer(conf, nil)
@@ -62,8 +62,9 @@ func makeClient() InfluxAnomalyClient {
 	anomalyClient := InfluxAnomalyClient{
 		Client:     client,
 		Anomalyzer: &anom,
-		Table:      "metd.lio5.elasticsearch.cpu.avg",
-		Updated:    time.Now(),
+		// change to relevant table name
+		Table:   "metd.lio5.elasticsearch.cpu.avg",
+		Updated: time.Now(),
 	}
 	return anomalyClient
 }
@@ -87,7 +88,7 @@ func TestUpdate(t *testing.T) {
 	assert.Tf(t, len(predata) > 0, "Underlying data was not filled in")
 	assert.Equal(t, err, nil, "Error updating underlying data")
 
-	// wait 45 seconds (enough time for some new data to come in)
+	// wait 60 seconds (enough time for some new data to come in)
 	time.Sleep(60 * time.Second)
 	ys, _ = anomalyClient.Get()
 	_ = anomalyClient.Update(ys)
