@@ -196,9 +196,7 @@ func MagnitudeTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	return weightExp(pdiff, 10)
 }
 
-// Implements the Kolmogorv-Smirnov test. The p-score returned is not consistent
-// results obtained in R, but is consistent with results from the skyline package
-// (https://github.com/etsy/skyline).
+// Calculate a Kolmogorov-Smirnov test statistic.
 func KSTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	reference, active := extractWindows(vector, conf.referenceSize, conf.ActiveSize)
 
@@ -214,12 +212,14 @@ func KSTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 
 	// We want the reference and active vectors to have the same length n, so we
 	// consider the min and max for each and interpolated the points between.
-	refInterp := interpolate(reference, n1+n2)
-	activeInterp := interpolate(active, n1+n2)
+	min := math.Min(reference[0], active[0])
+	max := math.Max(reference[n1-1], active[n2-1])
+
+	interpolated := interpolate(min, max, n1+n2)
 
 	// Then we apply the distribution function over the interpolated data.
-	activeDist := activeInterp.Apply(activeEcdf)
-	refDist := refInterp.Apply(refEcdf)
+	activeDist := interpolated.Apply(activeEcdf)
+	refDist := interpolated.Apply(refEcdf)
 
 	// Find the maximum displacement between both distributions. Use this value
 	// to calculate the KS test score.
@@ -250,10 +250,9 @@ func BootstrapKSTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 }
 
 // A helper function for KS that rescales a vector to the desired length npoints.
-func interpolate(vector govector.Vector, npoints int) govector.Vector {
+func interpolate(min, max float64, npoints int) govector.Vector {
 	interp := make(govector.Vector, npoints)
-	max := vector.Max()
-	min := vector.Min()
+
 	step := (max - min) / (float64(npoints) - 1)
 	interp[0] = min
 	i := 1
