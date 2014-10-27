@@ -3,7 +3,6 @@ package influxclient
 import (
 	"github.com/bmizerany/assert"
 	"testing"
-	"time"
 )
 
 func TestGet(t *testing.T) {
@@ -29,19 +28,8 @@ func TestUpdate(t *testing.T) {
 	// let's populate it
 	err = anomalyClient.Update(ys)
 	predata := anomalyClient.Anomalyzer.Data
-	pretime := anomalyClient.Updated.Unix()
 	assert.Tf(t, len(predata) > 0, "Underlying data was not filled in")
 	assert.Equal(t, err, nil, "Error updating underlying data")
-
-	// wait 60 seconds (enough time for some new data to come in)
-	time.Sleep(60 * time.Second)
-	ys, _ = anomalyClient.Get()
-	_ = anomalyClient.Update(ys)
-	postdata := anomalyClient.Anomalyzer.Data
-	posttime := anomalyClient.Updated.Unix()
-
-	assert.Tf(t, predata[0] != postdata[0], "Underlying data was not updated")
-	assert.Tf(t, pretime < posttime, "Timestamp was not updated")
 }
 
 func TestEval(t *testing.T) {

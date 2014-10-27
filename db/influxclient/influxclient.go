@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	influx "github.com/influxdb/influxdb/client"
-	anomalyzer "github.com/lytics/anomalyzer"
+	"github.com/lytics/anomalyzer"
 	"io/ioutil"
 	"net/http"
 	"regexp"

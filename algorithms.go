@@ -1,4 +1,4 @@
-package anomalyze
+package anomalyzer
 
 import (
 	"github.com/drewlanenga/govector"
