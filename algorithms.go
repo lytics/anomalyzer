@@ -16,7 +16,7 @@ var (
 		"rank":      RankTest,
 		"cdf":       CDFTest,
 		"fence":     FenceTest,
-		"ks":        BootstrapKSTest,
+		"ks":        BootstrapKsTest,
 	}
 )
 
@@ -219,7 +219,7 @@ func MagnitudeTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 }
 
 // Calculate a Kolmogorov-Smirnov test statistic.
-func KSTest(vector govector.Vector, conf AnomalyzerConf) float64 {
+func KsStat(vector govector.Vector, conf AnomalyzerConf) float64 {
 	reference, active, err := extractWindows(vector, conf.referenceSize, conf.ActiveSize, conf.ActiveSize)
 	if err != nil {
 		return NA
@@ -256,8 +256,8 @@ func KSTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	return d
 }
 
-func BootstrapKSTest(vector govector.Vector, conf AnomalyzerConf) float64 {
-	dist := KSTest(vector, conf)
+func BootstrapKsTest(vector govector.Vector, conf AnomalyzerConf) float64 {
+	dist := KsStat(vector, conf)
 	if dist == NA {
 		return NA
 	}
@@ -267,7 +267,7 @@ func BootstrapKSTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 
 	for i < conf.PermCount {
 		permVector := vector.Shuffle()
-		permDist := KSTest(permVector, conf)
+		permDist := KsStat(permVector, conf)
 
 		if permDist < dist {
 			significant++
