@@ -14,7 +14,7 @@ Specifying a number of seasons will yield a reference window length equal to tha
 Anomalyzer can implement one or more of the following algorithmic tests:
 
 1. **cdf**: Compares the differences in the behavior in the active window to the cumulative distribution function of the reference window. 
-2. **diff**: Performs a bootstrap permutation test on the ranks of the differences in both windows, in the flavor of a [Mann-Whitney](http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U_test) test.
+2. **diff**: Performs a bootstrap permutation test on the ranks of the differences in both windows, in the flavor of a [Wilcoxon rank-sum](http://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U_test) test.
 3. **rank**: Performs a bootstrap permutation test on the ranks of the entries themselves in both windows.
 4. **magnitude**: Compares the relative magnitude of the difference between the averages of the active and the reference windows.
 5. **fence**: Indicates that data are approaching a configurable upper and lower bound.
@@ -54,7 +54,7 @@ import (
 func main() {
 	conf := &anomalyze.AnomalyzerConf{
 		UpperBound:    5,
-		LowerBound:    0,
+		LowerBound:    anomalyze.NA, // ignore the lower bound
 		ActiveSize:    1,
 		NSeasons:      4,
 		Methods:       []string{"diff", "fence", "rank", "magnitude"},

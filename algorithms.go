@@ -1,6 +1,7 @@
 package anomalyzer
 
 import (
+	"fmt"
 	"github.com/drewlanenga/govector"
 	"math"
 	"sort"
@@ -15,7 +16,7 @@ var (
 		"rank":      RankTest,
 		"cdf":       CDFTest,
 		"fence":     FenceTest,
-		"ks":        BootstrapKSTest,
+		"ks":        BootstrapKsTest,
 	}
 )
 
@@ -49,21 +50,29 @@ func min(x, y int) int {
 	return x
 }
 
-// Return a vector slice for the active window
-func extractWindows(vector govector.Vector, refSize, activeSize int) (govector.Vector, govector.Vector) {
+// Return a vector slice for the active window and reference window.
+// Some tests require different minimum thresholds for sizes of reference windows.
+// This can be specified in the minRefSize parameter. If size isn't important, use -1
+func extractWindows(vector govector.Vector, refSize, activeSize, minRefSize int) (govector.Vector, govector.Vector, error) {
 	n := len(vector)
 	activeSize = min(activeSize, n)
 	refSize = min(refSize, n-activeSize)
 
+	// make sure the reference size is at least as big as the active size
+	// note that this penalty might be overly severe for some tests
+	if refSize < minRefSize {
+		return nil, nil, fmt.Errorf("Reference size must be at least as big as active size")
+	}
+
 	// return reference and active windows
-	return vector[n-activeSize-refSize : n-activeSize], vector[n-activeSize:]
+	return vector[n-activeSize-refSize : n-activeSize], vector[n-activeSize:], nil
 }
 
 // This function can be used to test whether or not data is getting close to a
 // specified upper or lower bound.
 func FenceTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	// we don't really care about a reference window for this one
-	_, active := extractWindows(vector, conf.referenceSize, conf.ActiveSize)
+	_, active, _ := extractWindows(vector, conf.referenceSize, conf.ActiveSize, -1)
 
 	x := active.Mean()
 
@@ -99,7 +108,10 @@ func DiffTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 
 	// The indexing runs to length-1 because after applying .Diff(), We have
 	// decreased the length of out vector by 1.
-	_, active := extractWindows(ranks, conf.referenceSize-1, conf.ActiveSize)
+	_, active, err := extractWindows(ranks, conf.referenceSize-1, conf.ActiveSize, conf.ActiveSize)
+	if err != nil {
+		return NA
+	}
 
 	// Consider the sum of the ranks across the active data. This is the sum that
 	// we will compare our permutations to.
@@ -112,7 +124,7 @@ func DiffTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	// (from the length of the reference data to the full length).
 	for i < conf.PermCount {
 		permRanks := vector.Shuffle().Diff().Apply(math.Abs).Rank()
-		_, permActive := extractWindows(permRanks, conf.referenceSize-1, conf.ActiveSize)
+		_, permActive, _ := extractWindows(permRanks, conf.referenceSize-1, conf.ActiveSize, conf.ActiveSize)
 
 		// If we find a sum that is less than the initial sum across the active data,
 		// this implies our initial sum might be uncharacteristically high. We increment
@@ -132,7 +144,10 @@ func RankTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	// Find the differences between neighboring elements and rank those differences.
 	ranks := vector.Rank()
 
-	_, active := extractWindows(ranks, conf.referenceSize, conf.ActiveSize)
+	_, active, err := extractWindows(ranks, conf.referenceSize, conf.ActiveSize, conf.ActiveSize)
+	if err != nil {
+		return NA
+	}
 
 	// Consider the sum of the ranks across the active data. This is the sum that
 	// we will compare our permutations to.
@@ -145,7 +160,7 @@ func RankTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	// (from the length of the reference data to the full length).
 	for i < conf.PermCount {
 		permRanks := vector.Shuffle().Rank()
-		_, permActive := extractWindows(permRanks, conf.referenceSize, conf.ActiveSize)
+		_, permActive, _ := extractWindows(permRanks, conf.referenceSize, conf.ActiveSize, conf.ActiveSize)
 
 		// If we find a sum that is less than the initial sum across the active data,
 		// this implies our initial sum might be uncharacteristically high. We increment
@@ -164,7 +179,10 @@ func RankTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 // for the data.
 func CDFTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	diffs := vector.Diff().Apply(math.Abs)
-	reference, active := extractWindows(diffs, conf.referenceSize-1, conf.ActiveSize)
+	reference, active, err := extractWindows(diffs, conf.referenceSize-1, conf.ActiveSize, conf.ActiveSize)
+	if err != nil {
+		return NA
+	}
 
 	// Find the empircal distribution function using the reference window.
 	refEcdf := reference.Ecdf()
@@ -182,7 +200,11 @@ func CDFTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 // Generates the percent difference between the means of the reference and active
 // data. Returns a value scaled such that it lies between 0 and 1.
 func MagnitudeTest(vector govector.Vector, conf AnomalyzerConf) float64 {
-	reference, active := extractWindows(vector, conf.referenceSize, conf.ActiveSize)
+	reference, active, err := extractWindows(vector, conf.referenceSize, conf.ActiveSize, 1)
+	if err != nil {
+		return NA
+	}
+
 	activeMean := active.Mean()
 	refMean := reference.Mean()
 
@@ -197,8 +219,11 @@ func MagnitudeTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 }
 
 // Calculate a Kolmogorov-Smirnov test statistic.
-func KSTest(vector govector.Vector, conf AnomalyzerConf) float64 {
-	reference, active := extractWindows(vector, conf.referenceSize, conf.ActiveSize)
+func KsStat(vector govector.Vector, conf AnomalyzerConf) float64 {
+	reference, active, err := extractWindows(vector, conf.referenceSize, conf.ActiveSize, conf.ActiveSize)
+	if err != nil {
+		return NA
+	}
 
 	n1 := len(reference)
 	n2 := len(active)
@@ -231,15 +256,18 @@ func KSTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	return d
 }
 
-func BootstrapKSTest(vector govector.Vector, conf AnomalyzerConf) float64 {
-	dist := KSTest(vector, conf)
+func BootstrapKsTest(vector govector.Vector, conf AnomalyzerConf) float64 {
+	dist := KsStat(vector, conf)
+	if dist == NA {
+		return NA
+	}
 
 	i := 0
 	significant := 0
 
 	for i < conf.PermCount {
 		permVector := vector.Shuffle()
-		permDist := KSTest(permVector, conf)
+		permDist := KsStat(permVector, conf)
 
 		if permDist < dist {
 			significant++

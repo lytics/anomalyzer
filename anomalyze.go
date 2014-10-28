@@ -46,9 +46,7 @@ func validateConf(conf *AnomalyzerConf) error {
 	}
 
 	// make reference window some multiple of the active window size
-	if conf.referenceSize == 0 {
-		conf.referenceSize = conf.NSeasons * conf.ActiveSize
-	}
+	conf.referenceSize = conf.NSeasons * conf.ActiveSize
 
 	// window sizes must be positive ints
 	if conf.ActiveSize < 1 {
@@ -56,15 +54,8 @@ func validateConf(conf *AnomalyzerConf) error {
 	}
 
 	if conf.referenceSize < 4 {
-		return fmt.Errorf("Number of seasons must be greater than %v", conf.NSeasons)
+		return fmt.Errorf("The combination of active window (%d) and nseasons (%d) yields a reference window that is too small for analysis.  Please increase one or both.", conf.ActiveSize, conf.NSeasons)
 	}
-
-	/*
-		// validation for the magnitude test
-		if conf.Sensitivity < 0 || conf.Sensitivity > 1 {
-			return fmt.Errorf("Sensitivity must be between 0 and 1, %v given", conf.Sensitivity)
-		}
-	*/
 
 	// validation for the fence test
 	if exists("fence", conf.Methods) {
@@ -77,7 +68,7 @@ func validateConf(conf *AnomalyzerConf) error {
 		}
 	}
 
-	// validation for the rank test
+	// validation for the permutation tests
 	if exists("rank", conf.Methods) || exists("ks", conf.Methods) || exists("diff", conf.Methods) {
 		if conf.PermCount == 0 {
 			conf.PermCount = 500
@@ -129,21 +120,26 @@ func (a Anomalyzer) Push(x float64) float64 {
 	return a.Eval()
 }
 
-// Return the weighted average of four statistical tests
-// for anomaly detection and return the probability that
-// a behavior is anomalous.
+// Return the weighted average of all statistical tests
+// for anomaly detection, which yields the probability that
+// the currently observed behavior is anomalous.
 func (a Anomalyzer) Eval() float64 {
 
-	probs := make(govector.Vector, len(a.Conf.Methods))
+	probs := make(govector.Vector, 0, len(a.Conf.Methods))
+	weights := make(govector.Vector, 0, len(a.Conf.Methods))
 
-	for i, method := range a.Conf.Methods {
+	for _, method := range a.Conf.Methods {
 		algorithm := Algorithms[method]
-		probs[i] = cap(algorithm(a.Data, *a.Conf), 0, 1)
-	}
-	// ignore the error since the length of probs and
-	// the weights will always be equal
+		prob := cap(algorithm(a.Data, *a.Conf), 0, 1)
 
-	weights := a.getWeights(probs)
+		if prob != NA {
+			probs = append(probs, prob)
+			weights = append(weights, a.getWeight(method, prob))
+		}
+	}
+
+	// ignore the error since we force the length of probs
+	// and the weights to be equal
 	weighted, _ := probs.WeightedMean(weights)
 
 	// if all the weights are zero, then our weighted mean
@@ -152,35 +148,26 @@ func (a Anomalyzer) Eval() float64 {
 	if math.IsNaN(weighted) {
 		weighted = 0
 	}
+
 	return weighted
 }
 
 // Use essentially similar weights.  However, if either the magnitude
 // or fence methods have high probabilities, upweight them significantly.
-func (a Anomalyzer) getWeights(probs govector.Vector) govector.Vector {
-	nmethods := len(a.Conf.Methods)
-	weights := make(govector.Vector, nmethods)
-	i := 0
-	for i < nmethods {
-		weights[i] = 0.5
-		i++
-	}
+func (a Anomalyzer) getWeight(name string, prob float64) float64 {
+	weight := 0.5
 
+	dynamicWeights := []string{"magnitude", "fence"}
 	// If either the magnitude and fence methods don't have any
 	// probability to contribute, we don't want to hear about it.
 	// If they do, we upweight them substantially.
-
-	dynamicWeights := []string{"magnitude", "fence"}
-	for _, dynamicWeight := range dynamicWeights {
-		methodIndex := index(dynamicWeight, a.Conf.Methods)
-		if methodIndex > -1 {
-			if probs[methodIndex] > 0.8 {
-				weights[methodIndex] = 1.0
-			} else {
-				weights[methodIndex] = 0.0
-			}
+	if exists(name, dynamicWeights) {
+		if prob > 0.8 {
+			weight = 1.0
+		} else {
+			weight = 0.0
 		}
 	}
 
-	return weights
+	return weight
 }

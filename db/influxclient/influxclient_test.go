@@ -58,6 +58,6 @@ func TestEval(t *testing.T) {
 
 	// push on a very large value
 	prob = anomalyClient.Anomalyzer.Push(100.0)
-	assert.NotEqual(t, prob, 1.0, "This behavior should be anomalous.")
+	assert.Tf(t, prob > 0.5, "This behavior should be anomalous.")
 
 }
