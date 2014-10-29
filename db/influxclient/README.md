@@ -49,7 +49,7 @@ func main() {
 	// nil, specify "")
 
 	methods := []string{"diff", "fence", "magnitude"}
-	anomalyClient, err := influxclient.Setup("influx_config.json", 50, anomalyzer.NA, 100, 1, methods, "", "")
+	anomalyClient, err := influxclient.Setup("influx_config.json", 30, anomalyzer.NA, 120, 1, methods, "", "")
 	if err != nil {
 		log.Fatalf("Error initializing anomalyzer: %v\n", err)
 	}
