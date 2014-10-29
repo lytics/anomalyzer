@@ -37,24 +37,34 @@ package main
 
 import (
 	"fmt"
-	influx "github.com/influxdb/influxdb/client"
 	"github.com/lytics/anomalyzer"
-	influxclient "github.com/lytics/anomalyzer/db"
+	influxclient "github.com/lytics/anomalyzer/db/influxclient"
+	"log"
 )
-
 
 func main() {
 	// specify: path to config.json file, upper bound, lower bound,
-	// length of the active window, number of seasons, list of methods,
-	// granularity and an aggregate function
+	// length of the active window, number of seasons, list of methods.
+	// optional: granularity and an aggregate function (if either are
+	// nil, specify "")
+
 	methods := []string{"diff", "fence", "magnitude"}
-	anomalyClient, err := Setup("config.json", 30, anomalyzer.NA, 100, 1, methods, "1h", "mean")
+	anomalyClient, err := influxclient.Setup("influx_config.json", 50, anomalyzer.NA, 100, 1, methods, "", "")
+	if err != nil {
+		log.Fatalf("Error initializing anomalyzer: %v\n", err)
+	}
 
 	// query existing database to get set
-	ys, _ := anomalyClient.Get()
+	ys, err := anomalyClient.Get()
+	fmt.Printf("Series: %v\n", ys)
+	if err != nil {
+		log.Fatalf("Get() Error: %v\n", err)
+	}
 	// update client with this new data
-	_ = anomalyClient.Update(ys)
-
+	err = anomalyClient.Update(ys)
+	if err != nil {
+		log.Fatalf("Update() Error: %v\n", err)
+	}
 	// or use GetAndUpdate() fn on anomalyClient
 
 	// now you can run the anomalize package over this
@@ -62,5 +72,4 @@ func main() {
 	prob := anomalyClient.Eval()
 	fmt.Printf("Anomalous Probability: %v\n", prob)
 }
-
 ```

@@ -9,6 +9,8 @@ func TestGet(t *testing.T) {
 	// setup
 	methods := []string{"diff", "fence", "magnitude"}
 	anomalyClient, err := Setup("influx_config.json", 30, 0, 100, 1, methods, "1h", "mean")
+	//anomalyClient, err := Setup("influx_config.json", 30, 0, 100, 1, methods, "1h", "", "mean")
+	//anomalyClient, err := Setup("influx_config.json", 30, 0, 100, 1, methods, "", "", "")
 	assert.Equal(t, err, nil, "Error generating anomalyzer: ", err)
 
 	_, err = anomalyClient.Get()
@@ -19,6 +21,7 @@ func TestUpdate(t *testing.T) {
 	// setup
 	methods := []string{"diff", "fence", "magnitude"}
 	anomalyClient, err := Setup("influx_config.json", 30, 0, 100, 1, methods, "1m", "mean")
+	//anomalyClient, err := Setup("influx_config.json", 30, 0, 100, 1, methods, "", "", "")
 	assert.Equal(t, err, nil, "Error generating anomalyzer: %v\n", err)
 
 	ys, err := anomalyClient.Get()
@@ -36,6 +39,7 @@ func TestEval(t *testing.T) {
 	// setup
 	methods := []string{"diff", "fence", "magnitude"}
 	anomalyClient, err := Setup("influx_config.json", 30, 0, 100, 1, methods, "1m", "mean")
+	//anomalyClient, err := Setup("influx_config.json", 30, 0, 100, 1, methods, "", "", "")
 	assert.Equal(t, err, nil, "Error generating anomalyzer: %v\n", err)
 
 	// get and update data

@@ -73,20 +73,14 @@ func Setup(filepath string, upperbound, lowerbound float64, activesize, nseasons
 		return InfluxAnomalyClient{}, err
 	}
 
-	// validate duration
-	//duration, err := validateDuration(granularity)
-	//if err != nil {
-	//	return InfluxAnomalyClient{}, err
-	//}
-
 	// build influx anomaly client
 	anomalyClient := InfluxAnomalyClient{
 		Client:      client,
 		Anomalyzer:  &anom,
 		Table:       conf.Table,
 		Granularity: granularity,
-		Updated:     time.Now(),
-		Function:    function,
+		//Updated:     initialtime,
+		Function: function,
 	}
 
 	// validate the client
@@ -173,15 +167,19 @@ func (c *InfluxAnomalyClient) Get() ([]float64, error) {
 	updated := c.Updated.Format(TIME_LAYOUT)
 
 	var query string
+	var index int
 	if len(c.Granularity) != 0 {
 		query = fmt.Sprintf("select %s(value) as value, time from %s where time > '%s' group by time(%s) limit %v", c.Function, c.Table, updated, c.Granularity, sampleSize)
+		// this query outputs the columns: [time value]
+		index = 1
 	} else {
 		query = fmt.Sprintf("select * from %s where time > '%s' limit %v", c.Table, updated, sampleSize)
+		// this query outputs the columns : [time squequenc_number value]
+		index = 2
 	}
 
 	series, err := c.Client.QueryWithNumbers(query)
 	if err != nil {
-		fmt.Printf("Query: %s\n", query)
 		return nil, err
 	}
 	points := series[0].GetPoints()
@@ -194,7 +192,7 @@ func (c *InfluxAnomalyClient) Get() ([]float64, error) {
 	i := len(points) - 1
 	j := 0
 	for i >= 0 {
-		val = points[i][1].(json.Number)
+		val = points[i][index].(json.Number)
 		y[j], err = val.Float64()
 		if err != nil {
 			return nil, err
@@ -207,9 +205,6 @@ func (c *InfluxAnomalyClient) Get() ([]float64, error) {
 
 // update the underlying data in the anomalyzer with the new slice
 func (c *InfluxAnomalyClient) Update(data []float64) error {
-	// get rid of old data
-	var newArray []float64
-	c.Anomalyzer.Data = newArray
 	// push in new data
 	c.Anomalyzer.Update(data)
 	c.Updated = time.Now()

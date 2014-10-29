@@ -107,9 +107,17 @@ func NewAnomalyzer(conf *AnomalyzerConf, data []float64) (Anomalyzer, error) {
 }
 
 func (a *Anomalyzer) Update(x []float64) {
+	// add new elememnts to the vector
 	for _, val := range x {
 		a.Data.Push(val)
 	}
+
+	// truncate the vector to avoid overflow
+	offset := len(a.Data) - (a.Conf.ActiveSize + a.Conf.referenceSize)
+	if offset < 0 {
+		offset = 0
+	}
+	a.Data = a.Data[offset:]
 }
 
 func (a Anomalyzer) Push(x float64) float64 {
