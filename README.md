@@ -4,7 +4,7 @@ Probability-based anomaly detection in Go.
 
 ## Windows
 
-Anomalyzer implements a suite of statistical tests that yield the probability that a given set of numeric input, typically a time series, contains anomalous behavior.  Each test compares the behavior in an **active window** of one or more points to the behavior in a **reference window** of two or more points.
+Inspired by Etsy's [Skyline](https://github.com/etsy/skyline) package, Anomalyzer implements a suite of statistical tests that yield the probability that a given set of numeric input, typically a time series, contains anomalous behavior.  Each test compares the behavior in an **active window** of one or more points to the behavior in a **reference window** of two or more points.
 
 Specifying a number of seasons will yield a reference window length equal to that factor times the length of the active window specified. For example, an input vector of `[1, 2, 3, 4, 5, 6, 7, 8, 9]`, and an active window length of 1 with number of seasons equal to 4, would yield an active window of `[9]` and a reference window of `[5, 6, 7, 8]`.
 
