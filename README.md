@@ -1,4 +1,3 @@
-
 # Anomalyzer
 
 Probability-based anomaly detection in Go.
@@ -48,11 +47,12 @@ package main
 
 import (
 	"fmt"
-	anomalyze "github.com/lytics/anomalyzer/anomalyzer"
+
+	"github.com/lytics/anomalyzer/anomalyzer"
 )
 
 func main() {
-	conf := &anomalyze.AnomalyzerConf{
+	conf := &anomalyzer.AnomalyzerConf{
 		UpperBound:    5,
 		LowerBound:    anomalyze.NA, // ignore the lower bound
 		ActiveSize:    1,
@@ -63,13 +63,12 @@ func main() {
 	// initialize with empty data or an actual slice of floats
 	data := []float64{0.1, 2.05, 1.5, 2.5, 2.6, 2.55}
 
-	anomalyzer, _ := anomalyze.NewAnomalyzer(conf, data)
+	anom, _ := anomalyze.NewAnomalyzer(conf, data)
 
 	// the push method automatically triggers a recalcuation of the
 	// anomaly probability.  The recalculation can also be triggered
 	// by a call to the Eval method.
-	prob := anomalyzer.Push(8.0)
+	prob := anom.Push(8.0)
 	fmt.Println("Anomalous Probability:", prob)
 }
-
 ```
