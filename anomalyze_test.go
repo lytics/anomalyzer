@@ -2,10 +2,11 @@ package anomalyzer
 
 import (
 	"fmt"
-	"github.com/bmizerany/assert"
-	"github.com/drewlanenga/govector"
 	"math/rand"
 	"testing"
+
+	"github.com/bmizerany/assert"
+	"github.com/drewlanenga/govector"
 )
 
 // Generates a random walk given the number of steps desired, a starting point,
@@ -42,4 +43,25 @@ func TestAnomalyzer(t *testing.T) {
 	prob := anomalyzer.Push(8.0)
 	fmt.Println(prob)
 	assert.Tf(t, prob > 0.5, "Anomalyzer returned a probability that was too small")
+}
+
+func Example() {
+	conf := &AnomalyzerConf{
+		UpperBound: 5,
+		LowerBound: NA, // ignore the lower bound
+		ActiveSize: 1,
+		NSeasons:   4,
+		Methods:    []string{"diff", "fence", "rank", "magnitude"},
+	}
+
+	// initialize with empty data or an actual slice of floats
+	data := []float64{0.1, 2.05, 1.5, 2.5, 2.6, 2.55}
+
+	anom, _ := NewAnomalyzer(conf, data)
+
+	// the push method automatically triggers a recalcuation of the
+	// anomaly probability.  The recalculation can also be triggered
+	// by a call to the Eval method.
+	prob := anom.Push(8.0)
+	fmt.Println("Anomalous Probability:", prob)
 }

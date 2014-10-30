@@ -2,8 +2,9 @@ package anomalyzer
 
 import (
 	"fmt"
-	"github.com/drewlanenga/govector"
 	"math"
+
+	"github.com/drewlanenga/govector"
 )
 
 const (
