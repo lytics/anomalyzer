@@ -1,13 +1,38 @@
 package influxclient_test
 
 import (
+	"fmt"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/bmizerany/assert"
 	influx "github.com/influxdb/influxdb/client"
 	. "github.com/lytics/anomalyzer/db/influxclient"
 )
+
+const defaultDB = "testdb"
+
+var (
+	testSeries = influx.Series{
+		Name:    "test_series",
+		Columns: []string{"time", "value"},
+		Points:  [][]interface{}{},
+	}
+	dbInit = sync.Once{}
+)
+
+func init() {
+	value := 0
+	for i := 0; i < 1000; i++ {
+		if i == 950 {
+			value = 100
+		} else {
+			value = 10
+		}
+		testSeries.Points = append(testSeries.Points, []interface{}{i, value})
+	}
+}
 
 func setupInflux(t *testing.T) *influx.Client {
 	conf := &influx.ClientConfig{
@@ -16,12 +41,25 @@ func setupInflux(t *testing.T) *influx.Client {
 		Password: os.Getenv("INFLUXDB_PASS"),
 		Database: os.Getenv("INFLUXDB_DB"),
 	}
+	if conf.Database == "" {
+		conf.Database = defaultDB
+	}
 	c, err := influx.NewClient(conf)
 	if err != nil {
 		t.Fatalf("Error creating influx client: %v", err)
 	}
 	if err := c.Ping(); err != nil {
 		t.Skipf("Skipping InfluxDB tests because it doesn't appear to be running:\n%v", err)
+	}
+	if _, err = c.Query(fmt.Sprintf("select time, value from %s limit 1", testSeries.Name)); err != nil {
+		dbInit.Do(func() {
+			t.Log("No test series found. Initializing test db.")
+			c.DeleteDatabase(conf.Database)
+			c.CreateDatabase(conf.Database)
+			if err := c.WriteSeries([]*influx.Series{&testSeries}); err != nil {
+				t.Fatalf("Error writing test data: %v", err)
+			}
+		})
 	}
 	return c
 }
@@ -30,7 +68,7 @@ func TestGet(t *testing.T) {
 	// setup
 	methods := []string{"diff", "fence", "magnitude"}
 	ic := setupInflux(t)
-	anomalyClient, err := New(ic, "test_table", 30, 0, 100, 1, methods, "1h", "mean")
+	anomalyClient, err := New(ic, testSeries.Name, 30, 0, 100, 1, methods, "1h", "mean")
 	assert.Equal(t, err, nil, "Error generating anomalyzer: ", err)
 
 	_, err = anomalyClient.Get()
@@ -41,7 +79,7 @@ func TestUpdate(t *testing.T) {
 	// setup
 	methods := []string{"diff", "fence", "magnitude"}
 	ic := setupInflux(t)
-	anomalyClient, err := New(ic, "test_table", 30, 0, 100, 1, methods, "1m", "mean")
+	anomalyClient, err := New(ic, testSeries.Name, 30, 0, 100, 1, methods, "1m", "mean")
 	assert.Equal(t, err, nil, "Error generating anomalyzer: %v\n", err)
 
 	ys, err := anomalyClient.Get()
@@ -59,7 +97,7 @@ func TestEval(t *testing.T) {
 	// setup
 	methods := []string{"diff", "fence", "magnitude"}
 	ic := setupInflux(t)
-	anomalyClient, err := New(ic, "test_table", 30, 0, 100, 1, methods, "1m", "mean")
+	anomalyClient, err := New(ic, testSeries.Name, 30, 0, 100, 1, methods, "1m", "mean")
 	assert.Equal(t, err, nil, "Error generating anomalyzer: %v\n", err)
 
 	// get and update data
@@ -73,7 +111,7 @@ func TestEval(t *testing.T) {
 	// setup
 	methods = []string{"fence", "magnitude", "diff"}
 	// in order to increase sensitivity, no longer averaging values over a relatively large window
-	anomalyClient, err = New(ic, "test_table", 30, 0, 50, 1, methods, "", "")
+	anomalyClient, err = New(ic, testSeries.Name, 30, 0, 50, 1, methods, "", "")
 	assert.Equal(t, err, nil, "Error generating anomalyzer: %v\n", err)
 
 	// get and update data
@@ -81,7 +119,8 @@ func TestEval(t *testing.T) {
 	assert.Equal(t, err, nil, "Error getting and updating data.")
 
 	// push on a very large value
-	prob = anomalyClient.Anomalyzer.Push(100.0)
-	assert.Tf(t, prob > 0.5, "This behavior should be anomalous.")
+	anomalyClient.Anomalyzer.Update([]float64{100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0})
+	prob = anomalyClient.Anomalyzer.Eval()
+	assert.Tf(t, prob > 0.5, "This behavior should be anomalous. (%f)", prob)
 
 }

@@ -18,14 +18,14 @@ const (
 type InfluxAnomalyClient struct {
 	client      *influx.Client
 	Anomalyzer  *anomalyzer.Anomalyzer
-	table       string
+	series      string
 	granularity string
 	updated     time.Time
 	function    string //{count | mean | sum}
 }
 
 // New creates a new InfluxDB Anomaly detection client.
-func New(client *influx.Client, table string, upperbound, lowerbound float64, activesize, nseasons int, methods []string, granularity string, function string) (*InfluxAnomalyClient, error) {
+func New(client *influx.Client, series string, upperbound, lowerbound float64, activesize, nseasons int, methods []string, granularity string, function string) (*InfluxAnomalyClient, error) {
 	// build anomalyzer
 	anomconf := &anomalyzer.AnomalyzerConf{
 		UpperBound: upperbound,
@@ -43,7 +43,7 @@ func New(client *influx.Client, table string, upperbound, lowerbound float64, ac
 	anomalyClient := &InfluxAnomalyClient{
 		client:      client,
 		Anomalyzer:  &anom,
-		table:       table,
+		series:      series,
 		granularity: granularity,
 		//Updated:     initialtime,
 		function: function,
@@ -136,11 +136,11 @@ func (c *InfluxAnomalyClient) Get() ([]float64, error) {
 	var index int
 	if len(c.granularity) != 0 {
 		query = fmt.Sprintf("select %s(value) as value, time from %s where time > '%s' group by time(%s) limit %v",
-			c.function, c.table, updated, c.granularity, sampleSize)
+			c.function, c.series, updated, c.granularity, sampleSize)
 		// this query outputs the columns: [time value]
 		index = 1
 	} else {
-		query = fmt.Sprintf("select * from %s where time > '%s' limit %v", c.table, updated, sampleSize)
+		query = fmt.Sprintf("select * from %s where time > '%s' limit %v", c.series, updated, sampleSize)
 		// this query outputs the columns : [time squequenc_number value]
 		index = 2
 	}
