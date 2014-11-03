@@ -33,7 +33,7 @@ A hybrid of the CDF function and High Rank tests, this test compares the largest
 
 ## Use Case #1: CPU Usage
 
-In particular, the behavior we'd like to detect as anomalies in CPU usage include: no longer receiving data (sharp falloff), maxxing out, and unusual spikes. We chose the active window length to be 2, which corresponded to a minute's worth of data. The number of seasons was 59, which meant my reference window encapsulated the past hour's worth of data. The upper bound was set to 80.0, corresponding to 80%, and the lower bound was set to 0.0, corresponding to 0%. Below we've shown the results of diff, cdf, magnitude, high rank, fence, and bootstrap ks tests on about a day's worth of CPU usage data. 
+In particular, the behavior we'd like to detect as anomalies in CPU usage include: no longer receiving data (sharp falloff), maxxing out, and unusual spikes. We chose the active window length to be 2, which corresponded to a minute's worth of data. The number of seasons was 59, which meant my reference window encapsulated the past hour's worth of data. The upper bound was set to 80.0 and the lower bound was set to 0.0. Below we've shown the results of diff, cdf, magnitude, high rank, fence, and bootstrap ks tests on about a day's worth of CPU usage data. 
 
 ![cpu_usage_alltest2](https://cloud.githubusercontent.com/assets/6633242/4891879/6268d76c-63ac-11e4-97e0-cf0480630461.png)
 
