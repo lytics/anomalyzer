@@ -30,7 +30,7 @@ func TestAnomalyzer(t *testing.T) {
 		LowerBound: 0,
 		ActiveSize: 1,
 		NSeasons:   4,
-		Methods:    []string{"cdf", "fence", "rank", "magnitude"},
+		Methods:    []string{"cdf", "fence", "highrank", "lowrank", "magnitude"},
 	}
 
 	// initialize with empty data or an actual slice of floats

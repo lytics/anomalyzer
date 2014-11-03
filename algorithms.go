@@ -13,7 +13,8 @@ var (
 	Algorithms = map[string]Algorithm{
 		"magnitude": MagnitudeTest,
 		"diff":      DiffTest,
-		"rank":      RankTest,
+		"highrank":  RankTest,
+		"lowrank":   ReverseRankTest,
 		"cdf":       CDFTest,
 		"fence":     FenceTest,
 		"ks":        BootstrapKsTest,
@@ -104,7 +105,7 @@ func weightExp(x, base float64) float64 {
 // been set to 500 but can be increased for more precision.
 func DiffTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	// Find the differences between neighboring elements and rank those differences.
-	ranks := vector.Diff().Apply(math.Abs).Rank()
+	ranks := vector.RelDiff().Apply(math.Abs).Rank()
 
 	// The indexing runs to length-1 because after applying .Diff(), We have
 	// decreased the length of out vector by 1.
@@ -123,7 +124,7 @@ func DiffTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	// Permute the active and reference data and compute the sums across the tail
 	// (from the length of the reference data to the full length).
 	for i < conf.PermCount {
-		permRanks := vector.Shuffle().Diff().Apply(math.Abs).Rank()
+		permRanks := vector.Shuffle().RelDiff().Apply(math.Abs).Rank()
 		_, permActive, _ := extractWindows(permRanks, conf.referenceSize-1, conf.ActiveSize, conf.ActiveSize)
 
 		// If we find a sum that is less than the initial sum across the active data,
@@ -141,7 +142,7 @@ func DiffTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 
 // Very similar to the above.
 func RankTest(vector govector.Vector, conf AnomalyzerConf) float64 {
-	// Find the differences between neighboring elements and rank those differences.
+	// Rank the elements of a vector
 	ranks := vector.Rank()
 
 	_, active, err := extractWindows(ranks, conf.referenceSize, conf.ActiveSize, conf.ActiveSize)
@@ -173,6 +174,10 @@ func RankTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	// We return the percentage of the number of iterations where we found our initial
 	// sum to be high.
 	return float64(significant) / float64(conf.PermCount)
+}
+
+func ReverseRankTest(vector govector.Vector, conf AnomalyzerConf) float64 {
+	return 1 - RankTest(vector, conf)
 }
 
 // Generates the cumulative distribution function using the difference in the means

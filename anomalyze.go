@@ -28,7 +28,7 @@ type Anomalyzer struct {
 
 func validateConf(conf *AnomalyzerConf) error {
 	// if supplied, make sure the detection methods are supported
-	supportedMethods := []string{"magnitude", "diff", "rank", "fence", "ks", "cdf"}
+	supportedMethods := []string{"magnitude", "diff", "highrank", "lowrank", "fence", "ks", "cdf"}
 	minimumMethods := []string{"magnitude", "ks"}
 	if conf.Methods == nil {
 		conf.Methods = minimumMethods
@@ -69,7 +69,7 @@ func validateConf(conf *AnomalyzerConf) error {
 	}
 
 	// validation for the permutation tests
-	if exists("rank", conf.Methods) || exists("ks", conf.Methods) || exists("diff", conf.Methods) {
+	if exists("highrank", conf.Methods) || exists("lowrank", conf.Methods) || exists("ks", conf.Methods) || exists("diff", conf.Methods) {
 		if conf.PermCount == 0 {
 			conf.PermCount = 500
 		}
@@ -139,6 +139,7 @@ func (a Anomalyzer) Eval() float64 {
 	for _, method := range a.Conf.Methods {
 		algorithm := Algorithms[method]
 		prob := cap(algorithm(a.Data, *a.Conf), 0, 1)
+		//fmt.Printf("%s: %v\n", method, prob)
 
 		if prob != NA {
 			probs = append(probs, prob)
