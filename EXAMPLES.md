@@ -1,7 +1,7 @@
 
 # Anomaly Detection Validation
 
-As a sense check, we considered the results of our anomalyzer package for two different types of data: 1) cpu usage, and 2) audience sizes. First, let's describe each algorithm in more detail and explain which scenarios it might be useful in. Then we'll detail what the algorithms return for these two use cases.
+As a sense check, we considered the results of our anomalyzer package for two different types of data: cpu usage, and audience sizes. First, we'll describe each algorithm in more detail and explain which scenarios it might be useful in. Then we'll detail what the algorithms return for these two use cases.
 
 ## Algorithms In-depth
 
