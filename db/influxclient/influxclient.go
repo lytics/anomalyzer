@@ -3,63 +3,29 @@ package influxclient
 import (
 	"encoding/json"
 	"fmt"
-	influx "github.com/influxdb/influxdb/client"
-	"github.com/lytics/anomalyzer"
-	"io/ioutil"
-	"net/http"
 	"regexp"
 	"strings"
 	"time"
+
+	influx "github.com/influxdb/influxdb/client"
+	"github.com/lytics/anomalyzer"
 )
 
 const (
-	TIME_LAYOUT = "2006-01-02 15:04:05.999"
+	timeLayout = "2006-01-02 15:04:05.999"
 )
 
-type Config struct {
-	Host     string
-	Username string
-	Password string
-	Database string
-	Table    string
-}
-
 type InfluxAnomalyClient struct {
-	Client      *influx.Client
+	client      *influx.Client
 	Anomalyzer  *anomalyzer.Anomalyzer
-	Table       string
-	Granularity string
-	Updated     time.Time
-	Function    string //{count | mean | sum}
+	series      string
+	granularity string
+	updated     time.Time
+	function    string //{count | mean | sum}
 }
 
-func Setup(filepath string, upperbound, lowerbound float64, activesize, nseasons int, methods []string, granularity string, function string) (InfluxAnomalyClient, error) {
-	// unmarshal db stuff from json file
-	content, err := ioutil.ReadFile(filepath)
-	if err != nil {
-		return InfluxAnomalyClient{}, err
-	}
-
-	var conf Config
-	err = json.Unmarshal(content, &conf)
-	if err != nil {
-		return InfluxAnomalyClient{}, err
-	}
-
-	// make influx client
-	defaults := &influx.ClientConfig{
-		Host:       conf.Host,
-		Username:   conf.Username,
-		Password:   conf.Password,
-		Database:   conf.Database,
-		HttpClient: http.DefaultClient,
-	}
-
-	client, err := influx.NewClient(defaults)
-	if err != nil {
-		return InfluxAnomalyClient{}, err
-	}
-
+// New creates a new InfluxDB Anomaly detection client.
+func New(client *influx.Client, series string, upperbound, lowerbound float64, activesize, nseasons int, methods []string, granularity string, function string) (*InfluxAnomalyClient, error) {
 	// build anomalyzer
 	anomconf := &anomalyzer.AnomalyzerConf{
 		UpperBound: upperbound,
@@ -70,23 +36,22 @@ func Setup(filepath string, upperbound, lowerbound float64, activesize, nseasons
 	}
 	anom, err := anomalyzer.NewAnomalyzer(anomconf, nil)
 	if err != nil {
-		return InfluxAnomalyClient{}, err
+		return nil, err
 	}
 
 	// build influx anomaly client
-	anomalyClient := InfluxAnomalyClient{
-		Client:      client,
+	anomalyClient := &InfluxAnomalyClient{
+		client:      client,
 		Anomalyzer:  &anom,
-		Table:       conf.Table,
-		Granularity: granularity,
+		series:      series,
+		granularity: granularity,
 		//Updated:     initialtime,
-		Function: function,
+		function: function,
 	}
 
 	// validate the client
-	err = anomalyClient.validateAnomalyzer()
-	if err != nil {
-		return InfluxAnomalyClient{}, err
+	if err = anomalyClient.validateAnomalyzer(); err != nil {
+		return nil, err
 	}
 	return anomalyClient, nil
 }
@@ -128,28 +93,28 @@ func validateDuration(s string) (string, error) {
 }
 
 func (c *InfluxAnomalyClient) validateAnomalyzer() error {
-	if len(c.Granularity) != 0 {
-		duration, err := validateDuration(c.Granularity)
+	if len(c.granularity) != 0 {
+		duration, err := validateDuration(c.granularity)
 		if err != nil {
 			return err
 		}
-		c.Granularity = duration
+		c.granularity = duration
 
-		if len(c.Granularity) != 0 {
-			if c.Function == "count" {
+		if len(c.granularity) != 0 {
+			if c.function == "count" {
 				return nil
-			} else if c.Function == "mean" {
+			} else if c.function == "mean" {
 				return nil
-			} else if c.Function == "sum" {
+			} else if c.function == "sum" {
 				return nil
 			} else {
-				err := fmt.Errorf("Granularity was specified, but an aggregate function was not (%s).", c.Function)
+				err := fmt.Errorf("Granularity was specified, but an aggregate function was not (%s).", c.function)
 				return err
 			}
 		}
 	}
-	if len(c.Granularity) == 0 {
-		if c.Function == "count" || c.Function == "mean" || c.Function == "sum" {
+	if len(c.granularity) == 0 {
+		if c.function == "count" || c.function == "mean" || c.function == "sum" {
 			err := fmt.Errorf("An aggregate function was specified, but granularity was not.")
 			return err
 		}
@@ -158,27 +123,29 @@ func (c *InfluxAnomalyClient) validateAnomalyzer() error {
 	return nil
 }
 
-// get data from influx
+// Get data from InfluxDB.
 func (c *InfluxAnomalyClient) Get() ([]float64, error) {
 	// the number of elements we want to grab
 	sampleSize := (1 + c.Anomalyzer.Conf.NSeasons) * c.Anomalyzer.Conf.ActiveSize
+
 	// this query selects the most recent data points over the past day
 	// using a "where" avoids scanning the whole set of data
-	updated := c.Updated.Format(TIME_LAYOUT)
+	updated := c.updated.Format(timeLayout)
 
 	var query string
 	var index int
-	if len(c.Granularity) != 0 {
-		query = fmt.Sprintf("select %s(value) as value, time from %s where time > '%s' group by time(%s) limit %v", c.Function, c.Table, updated, c.Granularity, sampleSize)
+	if len(c.granularity) != 0 {
+		query = fmt.Sprintf("select %s(value) as value, time from %s where time > '%s' group by time(%s) limit %v",
+			c.function, c.series, updated, c.granularity, sampleSize)
 		// this query outputs the columns: [time value]
 		index = 1
 	} else {
-		query = fmt.Sprintf("select * from %s where time > '%s' limit %v", c.Table, updated, sampleSize)
+		query = fmt.Sprintf("select * from %s where time > '%s' limit %v", c.series, updated, sampleSize)
 		// this query outputs the columns : [time squequenc_number value]
 		index = 2
 	}
 
-	series, err := c.Client.QueryWithNumbers(query)
+	series, err := c.client.QueryWithNumbers(query)
 	if err != nil {
 		return nil, err
 	}
@@ -203,11 +170,11 @@ func (c *InfluxAnomalyClient) Get() ([]float64, error) {
 	return y, nil
 }
 
-// update the underlying data in the anomalyzer with the new slice
+// Update the underlying data in the anomalyzer with the new slice
 func (c *InfluxAnomalyClient) Update(data []float64) error {
 	// push in new data
 	c.Anomalyzer.Update(data)
-	c.Updated = time.Now()
+	c.updated = time.Now()
 	return nil
 }
 
@@ -221,7 +188,7 @@ func (c *InfluxAnomalyClient) GetAndUpdate() error {
 	return nil
 }
 
-// return the probability that behavior in the active window is anomalous
+// Eval returns the probability that behavior in the active window is anomalous.
 func (c *InfluxAnomalyClient) Eval() float64 {
 	return c.Anomalyzer.Eval()
 }
