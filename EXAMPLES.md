@@ -15,17 +15,17 @@ Considers the differences between neighboring points and ranks them, making this
 
 ### High & Low Rank
 
-Ranks the values themselves in the reference and active windows and computes how many times the sum over the permuted active window is less than (high rank) or greater than (low rank) the sum over the original active window. The former detects an increasing time series, and the latter detects a decreasing time series. So, for example, one might prefer to receive notifications about a decreasing audience size versus increasing audience size.
+Ranks the values themselves in the reference and active windows and computes how many times the sum over the permuted active window is less than (high rank) or greater than (low rank) the sum over the original active window. The former detects an increasing time series, and the latter detects a decreasing time series. For example, one might prefer to receive notifications about a decreasing audience size versus increasing audience size, making low rank preferred.
 
 ### Magnitude 
 
-Considers the percentage difference between the averages of data in the active and reference windows. Since the probability is dynamically weighted, the result of the magnitude test is significantly down-weighted when it returns less than 80%, and is significantly up-weighted for results greater than 80%. Since this test considers the percentage change, it's a good measure of significant changes and is generally a good default.
+Considers the percentage difference between the averages of data in the active and reference windows. Since this probability is dynamically weighted, the result of the magnitude test is significantly down-weighted when it returns less than 80%, and is significantly up-weighted for results greater than 80%. Since this test considers the percentage change, it's a good measure of significant changes and is generally a good default.
 
-Note that since it considers the averages over active and reference windows, if you have a relatively long active window where your data increases/decreases and subsequently decreases/increases, then your active window might not reflect what you'd like it to. Keeping your active window smaller makes it more sensitive to this test. Additionally if the number of seasons specified is fairly long and your data has a history of prolonged increases or decreases, then an increase in your active window might not be perceived as significant.
+Note that since it considers the averages over active and reference windows, keeping your active window smaller makes this test more sensitive. Additionally if the number of seasons specified is fairly long and your data has a history of prolonged increases or decreases, then an increase in your active window might not be perceived as significant.
 
 ### Fence
 
-Considers how close the average of the data in the active window is to an upper or lower bound. This test is also more sensitive for a smaller active window size. This test is of course not applicable for data which does not lend itself to upper or lower bounds. For example, we'd like to know if CPU usage bottoms out at 0% or perhaps approaches 80%. But in terms of segment sizes, there is no natural upper or lower bound. Additionally, since this test considers the mean over the active window, it also is more sensitive for a smaller active window size.
+Considers how close the average of the data in the active window is to an upper or lower bound. This test is also more sensitive for a smaller active window size. It is of course not applicable for data which does not lend itself to upper or lower bounds. For example, we'd like to know if CPU usage bottoms out at 0% or perhaps approaches 80%. But in terms of segment sizes, there is no natural upper or lower bound.
 
 ### Bootstrap KS
 
