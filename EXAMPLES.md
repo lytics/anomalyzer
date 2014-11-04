@@ -71,11 +71,11 @@ Again, the bold red in the above plots signal probabilities greater than 90%.
 
 Lastly, we generated some seasonal data which could realistically stand in for CPU usage on a weekly basis, or gym membership over the course of a year. In this case, it's important to recognize the changes that are significant with respect to prior seasons. The tests we chose to run were cdf, magnitude, highrank, lowrank, diff, and ks. We chose the active window to be equal to the length of a season, 10, and the number of seasons to be 2.
 
-![seasonal_alltest1](https://cloud.githubusercontent.com/assets/6633242/4910004/b2b88e6a-6479-11e4-8280-893ecd67e144.png)
+![seasonal_alltest1](https://cloud.githubusercontent.com/assets/6633242/4910185/1d136742-647c-11e4-9524-c36c7e3befba.png)
 
 Again, shown in red are probabilities greater than 0.9. You can see above that the cdf, high rank, low rank, and diff tests are a bit oversensitive to the fluctuations. They also do not take into account the seasonal nature of this data. The ks test however does a good job of not over-reacting. 
 
-![seasonal_alltest2](https://cloud.githubusercontent.com/assets/6633242/4910097/f7dd0452-647a-11e4-99e6-791ea91d5c7f.png)
+![seasonal_alltest2](https://cloud.githubusercontent.com/assets/6633242/4910189/28aa1f6a-647c-11e4-9854-cf37f1cf5be3.png)
 
 And for a sample with a bit more volatility, shown above, the ks test selects the atypical region out well.
 
