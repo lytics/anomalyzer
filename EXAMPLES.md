@@ -73,7 +73,7 @@ Lastly, we generated some seasonal data which could realistically stand in for C
 
 ![seasonal_alltest1](https://cloud.githubusercontent.com/assets/6633242/4910185/1d136742-647c-11e4-9524-c36c7e3befba.png)
 
-Again, shown in red are probabilities greater than 0.9. You can see above that the cdf, high rank, low rank, and diff tests are a bit oversensitive to the fluctuations. They also do not take into account the seasonal nature of this data. The ks test however does a good job of not over-reacting. 
+Again shown in red are probabilities greater than 0.9. You can see above that the cdf, high rank, low rank, and diff tests are a bit oversensitive to the fluctuations. They also do not take into account the seasonal nature of this data. The ks test however does a good job of not over-reacting. 
 
 ![seasonal_alltest2](https://cloud.githubusercontent.com/assets/6633242/4910189/28aa1f6a-647c-11e4-9854-cf37f1cf5be3.png)
 
