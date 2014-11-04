@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/drewlanenga/govector"
 	"math"
-	"sort"
 )
 
 type Algorithm func(govector.Vector, AnomalyzerConf) float64
@@ -140,8 +139,31 @@ func DiffTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	return float64(significant) / float64(conf.PermCount)
 }
 
-// Very similar to the above.
 func RankTest(vector govector.Vector, conf AnomalyzerConf) float64 {
+	return rankTest(vector, conf, lessThan)
+}
+
+func ReverseRankTest(vector govector.Vector, conf AnomalyzerConf) float64 {
+	return rankTest(vector, conf, greaterThan)
+}
+
+type compare func(x, y float64) bool
+
+func greaterThan(x, y float64) bool {
+	if x > y {
+		return true
+	}
+	return false
+}
+
+func lessThan(x, y float64) bool {
+	if x < y {
+		return true
+	}
+	return false
+}
+
+func rankTest(vector govector.Vector, conf AnomalyzerConf, comparison compare) float64 {
 	// Rank the elements of a vector
 	ranks := vector.Rank()
 
@@ -166,7 +188,9 @@ func RankTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 		// If we find a sum that is less than the initial sum across the active data,
 		// this implies our initial sum might be uncharacteristically high. We increment
 		// our count.
-		if permActive.Sum() < activeSum {
+
+		permSum := permActive.Sum()
+		if comparison(permSum, activeSum) {
 			significant++
 		}
 		i++
@@ -174,10 +198,6 @@ func RankTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	// We return the percentage of the number of iterations where we found our initial
 	// sum to be high.
 	return float64(significant) / float64(conf.PermCount)
-}
-
-func ReverseRankTest(vector govector.Vector, conf AnomalyzerConf) float64 {
-	return 1 - RankTest(vector, conf)
 }
 
 // Generates the cumulative distribution function using the difference in the means
@@ -229,21 +249,21 @@ func KsStat(vector govector.Vector, conf AnomalyzerConf) float64 {
 	if err != nil {
 		return NA
 	}
-
 	n1 := len(reference)
 	n2 := len(active)
+	if n1%n2 != 0 {
+		return NA
+	}
 
 	// First sort the active data and generate a cummulative distribution function
 	// using that data. Do the same for the reference data.
-	sort.Sort(active)
 	activeEcdf := active.Ecdf()
-	sort.Sort(reference)
 	refEcdf := reference.Ecdf()
 
 	// We want the reference and active vectors to have the same length n, so we
 	// consider the min and max for each and interpolated the points between.
-	min := math.Min(reference[0], active[0])
-	max := math.Max(reference[n1-1], active[n2-1])
+	min := math.Min(reference.Min(), active.Min())
+	max := math.Max(reference.Max(), active.Max())
 
 	interpolated := interpolate(min, max, n1+n2)
 
@@ -251,13 +271,11 @@ func KsStat(vector govector.Vector, conf AnomalyzerConf) float64 {
 	activeDist := interpolated.Apply(activeEcdf)
 	refDist := interpolated.Apply(refEcdf)
 
-	// Find the maximum displacement between both distributions. Use this value
-	// to calculate the KS test score.
+	// Find the maximum displacement between both distributions.
 	d := 0.0
 	for i := 0; i < n1+n2; i++ {
 		d = math.Max(d, math.Abs(activeDist[i]-refDist[i]))
 	}
-
 	return d
 }
 
