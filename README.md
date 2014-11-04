@@ -58,7 +58,7 @@ func main() {
 		LowerBound:    anomalyze.NA, // ignore the lower bound
 		ActiveSize:    1,
 		NSeasons:      4,
-		Methods:       []string{"diff", "fence", "rank", "magnitude"},
+		Methods:       []string{"diff", "fence", "highrank", "lowrank", "magnitude"},
 	}
 
 	// initialize with empty data or an actual slice of floats

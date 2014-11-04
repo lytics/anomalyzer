@@ -121,7 +121,7 @@ func (a *Anomalyzer) Update(x []float64) {
 	a.Data = a.Data[offset:]
 }
 
-func (a Anomalyzer) Push(x float64) float64 {
+func (a *Anomalyzer) Push(x float64) float64 {
 	// add the new point to the data
 	a.Data.Push(x)
 

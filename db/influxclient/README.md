@@ -36,40 +36,49 @@ After grabbing new data using `Get`, the underlying data can be updated using `U
 package main
 
 import (
-	"fmt"
-	"github.com/lytics/anomalyzer"
-	influxclient "github.com/lytics/anomalyzer/db/influxclient"
-	"log"
+    "fmt"
+    "github.com/lytics/anomalyzer"
+    influx "github.com/influxdb/influxdb/client"
+    influxclient "github.com/lytics/anomalyzer/db/influxclient"
+    "log"
 )
 
 func main() {
-	// specify: path to config.json file, upper bound, lower bound,
-	// length of the active window, number of seasons, list of methods.
-	// optional: granularity and an aggregate function (if either are
-	// nil, specify "")
+    // specify: influxdb information, upper bound, lower bound,
+    // length of the active window, number of seasons, list of methods.
+    // optional: granularity and an aggregate function (if either are
+    // nil, specify "")
 
-	methods := []string{"diff", "fence", "magnitude"}
-	anomalyClient, err := influxclient.Setup("influx_config.json", 30, anomalyzer.NA, 120, 1, methods, "", "")
-	if err != nil {
-		log.Fatalf("Error initializing anomalyzer: %v\n", err)
-	}
+    conf := &influx.ClientConfig{
+        Host:     "hostname:8086",
+        Username: "username",
+        Password: "password",
+        Database: "database_name",
+    }
+    client, _ := influx.NewClient(conf)
+    methods := []string{"diff", "fence", "magnitude"}
 
-	// query existing database to get set
-	ys, err := anomalyClient.Get()
-	fmt.Printf("Series: %v\n", ys)
-	if err != nil {
-		log.Fatalf("Get() Error: %v\n", err)
-	}
-	// update client with this new data
-	err = anomalyClient.Update(ys)
-	if err != nil {
-		log.Fatalf("Update() Error: %v\n", err)
-	}
-	// or use GetAndUpdate() fn on anomalyClient
+    anomalyClient, err := influxclient.New(client, "table_name", 80.0, anomalyzer.NA, 2, 59, methods, "", "")
+    if err != nil {
+        log.Fatalf("Error initializing anomalyzer: %v\n", err)
+    }
 
-	// now you can run the anomalize package over this
-	// set like this
-	prob := anomalyClient.Eval()
-	fmt.Printf("Anomalous Probability: %v\n", prob)
+    // query existing database to get set
+    ys, err := anomalyClient.Get()
+    fmt.Printf("Series: %v\n", ys)
+    if err != nil {
+        log.Fatalf("Get() Error: %v\n", err)
+    }
+    // update client with this new data
+    err = anomalyClient.Update(ys)
+    if err != nil {
+        log.Fatalf("Update() Error: %v\n", err)
+    }
+    // or use GetAndUpdate() fn on anomalyClient
+
+    // now you can run the anomalize package over this
+    // set like this
+    prob := anomalyClient.Eval()
+    fmt.Printf("Anomalous Probability: %v\n", prob)
 }
 ```
