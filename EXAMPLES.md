@@ -1,7 +1,7 @@
 
 # Anomaly Detection Validation
 
-As a sense check, we considered the results of our anomalyzer package for two different types of data: cpu usage, and audience sizes. First, we'll describe each algorithm in more detail and explain which scenarios it might be useful in. Then we'll detail what the algorithms return for these two use cases.
+As a sense check, we considered the results of our anomalyzer package for three different types of time series: cpu usage, membership, and seasonal data. First, we'll describe each algorithm in more detail and explain which scenarios it might be useful in. Then we'll detail what the algorithms return for these two use cases.
 
 ## Algorithms In-depth
 
@@ -33,13 +33,13 @@ A hybrid of the CDF function and High Rank tests, this test compares the largest
 
 ## Use Case #1: CPU Usage
 
-In particular, the behavior we'd like to detect as anomalies in CPU usage include: no longer receiving data (sharp falloff), maxxing out, and unusual spikes. We chose the active window length to be 2, which corresponded to a minute's worth of data. The number of seasons was 59, which meant my reference window encapsulated the past hour's worth of data. The upper bound was set to 80.0 and the lower bound was set to 0.0. Below we've shown the results of diff, cdf, magnitude, high rank, fence, and bootstrap ks tests on about a day's worth of CPU usage data. 
+Detecting anomalies in CPU usage data could make debugging systems much easier, but since this data can be quite discontinuous, it's important to choose the right algorithms so that you aren't constantly being alerted. In particular, the behavior we'd like to detect as anomalies in CPU usage include: no longer receiving data (sharp falloff), maxxing out, and unusual spikes. We chose the active window length to be 2, which corresponded to a minute's worth of data. The number of seasons was 59, which meant my reference window encapsulated the past hour's worth of data. The upper bound was set to 80.0 and the lower bound was set to 0.0. Below we've shown the results of diff, cdf, magnitude, high rank, fence, and bootstrap ks tests on about a day's worth of CPU usage data. 
 
 ![cpu_usage_alltest2](https://cloud.githubusercontent.com/assets/6633242/4891879/6268d76c-63ac-11e4-97e0-cf0480630461.png)
 
 The dark red areas correspond to regions where a test returned a probability greater than 90%. We decided not to show low rank here because we don't care that much about decreasing CPU usage. As well, sharp falloffs should be detected by magnitude and fence tests.
 
-You can see that the CDF test was extremely sensitive to fluctuations, and makes it a bad test for this use case. Magnitude picked up the sharpest and largest peaks and drops in our data well. Our data never approached out 80% upper bound, but the fence test detected the dips to 0% that were made. We thought the ks and high rank tests did the best job of detecting unusual behavior, being a bit more informative than magnitude and fence. 
+You can see that the CDF test was extremely sensitive to fluctuations, and makes it a bad test for this use case. Magnitude picked up the sharpest and largest peaks and drops in our data well. Our data never approached our 80% upper bound, but the fence test detected the dips to 0% that were made. We thought the ks and high rank tests did the best job of detecting unusual behavior, being a bit more informative than magnitude and fence. (Although, others may disagree and prefer the less detailed option.)
 
 Below we've shown the weighted mean of these two tests. The regions in red correspond to an anomalous probability greater than 90%, and greater than 99% on the first and second plot respectively.
 
@@ -49,9 +49,9 @@ Below we've shown the weighted mean of these two tests. The regions in red corre
 
 You can see that by changing the threshold, we can get rid of some of the less important fluctuations.
 
-## Use Case #2: Segment Sizes
+## Use Case #2: Membership
 
-In terms of audience membership, the tests we chose to run were diff, high rank, low rank, magnitude, cdf, and bootstrap ks. We again chose the active window length to be 2, which this time corresponded to four hours worth of data. And again the number of seasons was 59, which meant my reference window encapsulated the past 10 days worth of data.
+We chose the use case of audience membership because one might be interested in seeing if the number of users has significantly changed after a marketing campaign, for example. Also this data appears more continuous, very different from what CPU usage data looks like. In terms of audience membership, the tests we chose to run were diff, high rank, low rank, magnitude, cdf, and bootstrap ks. We again chose the active window length to be 2, which this time corresponded to four hours worth of data. And again the number of seasons was 59, which meant my reference window encapsulated the past 10 days worth of data.
 
 ![segments_alltest](https://cloud.githubusercontent.com/assets/6633242/4890831/88285d1a-63a2-11e4-8f77-f1ca8c74689d.png)
 
@@ -65,4 +65,17 @@ Or you might be more interested in just the decreases in audience membership, su
 
 ![segments_weightedmean trough](https://cloud.githubusercontent.com/assets/6633242/4892397/c47b0218-63b1-11e4-82c9-4327d9370d84.png)
 
-Again, the bold red in theses plots signals probabilities greater than 90%.
+Again, the bold red in the above plots signal probabilities greater than 90%.
+
+## Use Case #3: Seasonal Data
+
+Lastly, we generated some seasonal data which could realistically stand in for CPU usage on a weekly basis, or gym membership over the course of a year. In this case, it's important to recognize the changes that are significant with respect to prior seasons. The tests we chose to run were cdf, magnitude, highrank, lowrank, diff, and ks. We chose the active window to be equal to the length of a season, 10, and the number of seasons to be 2.
+
+![seasonal_alltest1](https://cloud.githubusercontent.com/assets/6633242/4910004/b2b88e6a-6479-11e4-8280-893ecd67e144.png)
+
+Again, shown in red are probabilities greater than 0.9. You can see above that the cdf, high rank, low rank, and diff tests are a bit oversensitive to the fluctuations. They also do not take into account the seasonal nature of this data. The ks test however does a good job of not over-reacting. 
+
+![seasonal_alltest2](https://cloud.githubusercontent.com/assets/6633242/4910097/f7dd0452-647a-11e4-99e6-791ea91d5c7f.png)
+
+And for a sample with a bit more volatility, shown above, the ks test selects the atypical region out well.
+
