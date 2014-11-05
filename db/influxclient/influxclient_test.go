@@ -68,7 +68,7 @@ func TestGet(t *testing.T) {
 	// setup
 	methods := []string{"diff", "fence", "magnitude"}
 	ic := setupInflux(t)
-	anomalyClient, err := New(ic, testSeries.Name, 30, 0, 100, 1, methods, "1h", "mean")
+	anomalyClient, err := New(ic, testSeries.Name, 0.1, 30, 0, 100, 1, methods, "1h", "mean")
 	assert.Equal(t, err, nil, "Error generating anomalyzer: ", err)
 
 	_, err = anomalyClient.Get()
@@ -79,7 +79,7 @@ func TestUpdate(t *testing.T) {
 	// setup
 	methods := []string{"diff", "fence", "magnitude"}
 	ic := setupInflux(t)
-	anomalyClient, err := New(ic, testSeries.Name, 30, 0, 100, 1, methods, "1m", "mean")
+	anomalyClient, err := New(ic, testSeries.Name, 0.1, 30, 0, 100, 1, methods, "1m", "mean")
 	assert.Equal(t, err, nil, "Error generating anomalyzer: %v\n", err)
 
 	ys, err := anomalyClient.Get()
@@ -97,7 +97,7 @@ func TestEval(t *testing.T) {
 	// setup
 	methods := []string{"diff", "fence", "magnitude"}
 	ic := setupInflux(t)
-	anomalyClient, err := New(ic, testSeries.Name, 30, 0, 100, 1, methods, "1m", "mean")
+	anomalyClient, err := New(ic, testSeries.Name, 0.1, 30, 0, 100, 1, methods, "1m", "mean")
 	assert.Equal(t, err, nil, "Error generating anomalyzer: %v\n", err)
 
 	// get and update data
@@ -111,7 +111,7 @@ func TestEval(t *testing.T) {
 	// setup
 	methods = []string{"fence", "magnitude", "diff"}
 	// in order to increase sensitivity, no longer averaging values over a relatively large window
-	anomalyClient, err = New(ic, testSeries.Name, 30, 0, 50, 1, methods, "", "")
+	anomalyClient, err = New(ic, testSeries.Name, 0.1, 30, 0, 50, 1, methods, "", "")
 	assert.Equal(t, err, nil, "Error generating anomalyzer: %v\n", err)
 
 	// get and update data

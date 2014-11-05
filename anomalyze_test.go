@@ -27,11 +27,12 @@ func randomWalk(nsteps int, start float64, sd float64) (govector.Vector, error) 
 
 func TestAnomalyzer(t *testing.T) {
 	conf := &AnomalyzerConf{
-		UpperBound: 5,
-		LowerBound: 0,
-		ActiveSize: 1,
-		NSeasons:   4,
-		Methods:    []string{"cdf", "fence", "highrank", "lowrank", "magnitude"},
+		Sensitivity: 0.1,
+		UpperBound:  5,
+		LowerBound:  0,
+		ActiveSize:  1,
+		NSeasons:    4,
+		Methods:     []string{"cdf", "fence", "highrank", "lowrank", "magnitude"},
 	}
 
 	// initialize with empty data or an actual slice of floats
@@ -46,11 +47,12 @@ func TestAnomalyzer(t *testing.T) {
 
 func Example() {
 	conf := &AnomalyzerConf{
-		UpperBound: 5,
-		LowerBound: NA, // ignore the lower bound
-		ActiveSize: 1,
-		NSeasons:   4,
-		Methods:    []string{"diff", "fence", "highrank", "lowrank", "magnitude"},
+		Sensitivity: 0.1,
+		UpperBound:  5,
+		LowerBound:  NA, // ignore the lower bound
+		ActiveSize:  1,
+		NSeasons:    4,
+		Methods:     []string{"diff", "fence", "highrank", "lowrank", "magnitude"},
 	}
 
 	// initialize with empty data or an actual slice of floats

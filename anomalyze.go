@@ -12,7 +12,7 @@ const (
 )
 
 type AnomalyzerConf struct {
-	//Sensitivity   float64
+	Sensitivity   float64
 	UpperBound    float64
 	LowerBound    float64
 	ActiveSize    int
@@ -73,6 +73,12 @@ func validateConf(conf *AnomalyzerConf) error {
 	if exists("highrank", conf.Methods) || exists("lowrank", conf.Methods) || exists("ks", conf.Methods) || exists("diff", conf.Methods) {
 		if conf.PermCount == 0 {
 			conf.PermCount = 500
+		}
+	}
+
+	if exists("magnitude", conf.Methods) {
+		if conf.Sensitivity == 0.0 {
+			conf.Sensitivity = 0.1
 		}
 	}
 
@@ -141,6 +147,9 @@ func (a Anomalyzer) Eval() float64 {
 		algorithm := Algorithms[method]
 		prob := cap(algorithm(a.Data, *a.Conf), 0, 1)
 		//fmt.Printf("%s: %v\n", method, prob)
+		if method == "magnitude" && prob < a.Conf.Sensitivity {
+			return 0.0
+		}
 
 		if prob != NA {
 			probs = append(probs, prob)

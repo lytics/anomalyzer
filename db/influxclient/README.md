@@ -37,17 +37,17 @@ package main
 
 import (
     "fmt"
-    "github.com/lytics/anomalyzer"
     influx "github.com/influxdb/influxdb/client"
+    "github.com/lytics/anomalyzer"
     influxclient "github.com/lytics/anomalyzer/db/influxclient"
     "log"
 )
 
 func main() {
-    // specify: influxdb information, upper bound, lower bound,
-    // length of the active window, number of seasons, list of methods.
-    // optional: granularity and an aggregate function (if either are
-    // nil, specify "")
+    // specify: influxdb information, sensitivity, upper bound,
+    // lower bound, length of the active window, number of seasons,
+    // and list of methods. optional: granularity and an aggregate 
+    // function (if either are nil, specify "").
 
     conf := &influx.ClientConfig{
         Host:     "hostname:8086",
@@ -58,7 +58,7 @@ func main() {
     client, _ := influx.NewClient(conf)
     methods := []string{"diff", "fence", "magnitude"}
 
-    anomalyClient, err := influxclient.New(client, "table_name", 80.0, anomalyzer.NA, 2, 59, methods, "", "")
+    anomalyClient, err := influxclient.New(client, "table_name", 0.1, 80.0, anomalyzer.NA, 2, 59, methods, "", "")
     if err != nil {
         log.Fatalf("Error initializing anomalyzer: %v\n", err)
     }

@@ -163,6 +163,10 @@ func lessThan(x, y float64) bool {
 	return false
 }
 
+// Generates permutations of reference and active window values to determine
+// whether or not data is anomalous. The number of permutations desired defaults
+// to 500 but can be increased for more precision. A comparison function above
+// can be specified to create Rank and ReverseRank tests.
 func rankTest(vector govector.Vector, conf AnomalyzerConf, comparison compare) float64 {
 	// Rank the elements of a vector
 	ranks := vector.Rank()

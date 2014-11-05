@@ -25,14 +25,15 @@ type InfluxAnomalyClient struct {
 }
 
 // New creates a new InfluxDB Anomaly detection client.
-func New(client *influx.Client, series string, upperbound, lowerbound float64, activesize, nseasons int, methods []string, granularity string, function string) (*InfluxAnomalyClient, error) {
+func New(client *influx.Client, series string, sensitivity, upperbound, lowerbound float64, activesize, nseasons int, methods []string, granularity string, function string) (*InfluxAnomalyClient, error) {
 	// build anomalyzer
 	anomconf := &anomalyzer.AnomalyzerConf{
-		UpperBound: upperbound,
-		LowerBound: lowerbound,
-		ActiveSize: activesize,
-		NSeasons:   nseasons,
-		Methods:    methods,
+		Sensitivity: sensitivity,
+		UpperBound:  upperbound,
+		LowerBound:  lowerbound,
+		ActiveSize:  activesize,
+		NSeasons:    nseasons,
+		Methods:     methods,
 	}
 	anom, err := anomalyzer.NewAnomalyzer(anomconf, nil)
 	if err != nil {
@@ -141,7 +142,7 @@ func (c *InfluxAnomalyClient) Get() ([]float64, error) {
 		index = 1
 	} else {
 		query = fmt.Sprintf("select * from %s where time > '%s' limit %v", c.series, updated, sampleSize)
-		// this query outputs the columns : [time squequenc_number value]
+		// this query outputs the columns : [time sequence_number value]
 		index = 2
 	}
 

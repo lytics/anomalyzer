@@ -28,6 +28,10 @@ Any of the tests can be included in the anomalyzer, and if none are supplied in 
 
 A value for `ActiveSize`is required and must be a minimum of 1. The `NSeasons` will default to 4 if not specified. 
 
+### Magnitude
+
+If the magnitude test is specified, a `Sensitivity` (between 0 and 1) can be supplied such that when the result of the magnitude test is less than that value, the weighted mean will return 0. If `Sensitivity` is not specified, it defaults to 0.1.
+
 ### Bootstrap KS
 
 To capture seasonality, the bootstrap ks test should consider an active window length equal to a season. 
@@ -48,23 +52,23 @@ package main
 
 import (
 	"fmt"
-
-	"github.com/lytics/anomalyzer/anomalyzer"
+	"github.com/lytics/anomalyzer"
 )
 
 func main() {
 	conf := &anomalyzer.AnomalyzerConf{
-		UpperBound:    5,
-		LowerBound:    anomalyze.NA, // ignore the lower bound
-		ActiveSize:    1,
-		NSeasons:      4,
-		Methods:       []string{"diff", "fence", "highrank", "lowrank", "magnitude"},
+		Sensitivity: 0.1,
+		UpperBound:  5,
+		LowerBound:  anomalyzer.NA, // ignore the lower bound
+		ActiveSize:  1,
+		NSeasons:    4,
+		Methods:     []string{"diff", "fence", "highrank", "lowrank", "magnitude"},
 	}
 
 	// initialize with empty data or an actual slice of floats
 	data := []float64{0.1, 2.05, 1.5, 2.5, 2.6, 2.55}
 
-	anom, _ := anomalyze.NewAnomalyzer(conf, data)
+	anom, _ := anomalyzer.NewAnomalyzer(conf, data)
 
 	// the push method automatically triggers a recalcuation of the
 	// anomaly probability.  The recalculation can also be triggered
