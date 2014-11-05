@@ -5,17 +5,9 @@ Grab timeseries data from InfluxDB using the [Go client library](http://github.c
 
 ## InfluxDB
 
-InfluxDB is a time series database written in Go. In order to get started accessing a database, the `Host`, `Username`, `Password`, `Database`, and `Table` need to be specified so that a client can be created. This information should be kept in a json file as such:
-``` json
-{
-	"Host":       "ip address",
-	"Username":   "username",
-	"Password":   "password",
-	"Database":   "database_name",
-	"Table": 	  "table_name"
-}
-```
-The client created can then be used to query the database using [InfluxDB's query language](http://influxdb.com/docs/v0.7/api/query_language.html). Additionally, upper and lower bounds, active window length, and number of seasons need to be specified in order to run the anomalyzer package. Granularity and an aggregate function are optional arguments, which when both specified add a ["group by"](http://influxdb.com/docs/v0.8/api/query_language.html#group-by) clause to the query.
+InfluxDB is a time series database written in Go. In order to get started accessing a database, the `Host`, `Username`, `Password`, and `Database` need to be specified in an `influx.ClientConfig` so that a client can be created.
+
+The client created can then be used to query a specific `Table` using [InfluxDB's query language](http://influxdb.com/docs/v0.7/api/query_language.html). Additionally, sensitivity, upper and lower bounds, active window length, and number of seasons need to be specified in order to run the anomalyzer package. Granularity and an aggregate function are optional arguments, which when both specified add a ["group by"](http://influxdb.com/docs/v0.8/api/query_language.html#group-by) clause to the query.
 
 To grab new data, the `Get` function can be used. It queries the database for the most recent points (to avoid scanning a large set of data). The number of points selected depends on `ActiveSize` and `NSeasons`.
 
@@ -23,11 +15,9 @@ To grab new data, the `Get` function can be used. It queries the database for th
 
 ### Example
 
-Consider the case of monitoring CPU usage.  (Specific configuration should be adjusted specifically to the application a user is considering.) 
+Consider the case of monitoring CPU usage.  (Specific configuration should be adjusted specifically to the application a user is considering.) Let's assume we collect a new point every 30 seconds.  We choose `ActiveSize` to be 2, to consider recent activity in the past hour, and `NSeasons` to be 59, to allow us to compare activity in the past minute to the past hour. We also choose an `UpperBound` of 80, which allows us to make sure that we are alerted as CPU usage approaches and exceeds 80%. (Setting the lower bound to `NA` lets the anomalyzer know that we don't care if usage stays low.)
 
-Let's assume we collect a new point every 30 seconds.  We choose `ActiveSize` to be 120, to consider recent activity in the past hour, and `NSeasons` to be 1, to allow us to compare activity this hour to activity last hour. We also choose an `UpperBound` of 30, which allows us to make sure that we are alerted as CPU usage approaches and exceeds 30%.  (Setting the lower bound to `NA` lets the anomalyzer know that we don't care if usage stays low.)
-
-The [algorithms](https://github.com/lytics/anomalyzer/tree/master/anomalyzer#algorithms) applied were **diff**, **fence**, and **magnitude**. We chose not to apply **cdf** because it can be sensitive to small fluctuations, which be frequent in usage data.
+The [algorithms](https://github.com/lytics/anomalyzer/tree/master/anomalyzer#algorithms) applied were **ks** and **high rank**. (See EXAMPLES.md file in anomalyzer repository for more detailed analysis.)
 
 After grabbing new data using `Get`, the underlying data can be updated using `Update`. The `Eval` function returns a probability that behavior in the active window is anomalous by accessing the Anomalyzer package.
 
@@ -56,7 +46,7 @@ func main() {
         Database: "database_name",
     }
     client, _ := influx.NewClient(conf)
-    methods := []string{"diff", "fence", "magnitude"}
+    methods := []string{"ks", "highrank"}
 
     anomalyClient, err := influxclient.New(client, "table_name", 0.1, 80.0, anomalyzer.NA, 2, 59, methods, "", "")
     if err != nil {
