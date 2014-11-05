@@ -9,19 +9,13 @@ InfluxDB is a time series database written in Go. In order to get started access
 
 The client created can then be used to query a specific `Table` using [InfluxDB's query language](http://influxdb.com/docs/v0.7/api/query_language.html). Additionally, `Sensitivity`, `UpperBound`, `LowerBound`, `ActiveSize`, and `NSeasons` need to be specified in order to run the anomalyzer package. Granularity and an aggregate function are optional arguments, which when both specified add a ["group by"](http://influxdb.com/docs/v0.8/api/query_language.html#group-by) clause to the query.
 
-To grab new data, the `Get` function can be used. It queries the database for the most recent points (to avoid scanning a large set of data). The number of points selected depends on `ActiveSize` and `NSeasons`.
-
-## Anomalyzer
+To grab new data, the `Get` function can be used. It queries the database for the most recent points (to avoid scanning a large set of data). The number of points selected depends on `ActiveSize` and `NSeasons`. 
+After grabbing new data, the underlying data can be updated using `Update`. The `Eval` function returns a probability that behavior in the active window is anomalous by accessing the Anomalyzer package.
 
 ### Example
 
-Consider the case of monitoring CPU usage.  (Specific configuration should be adjusted specifically to the application a user is considering.) Let's assume we collect a new point every 30 seconds.  We choose `ActiveSize` to be 2, to consider recent activity in the past hour, and `NSeasons` to be 59, to allow us to compare activity in the past minute to the past hour. We also choose an `UpperBound` of 80, which allows us to make sure that we are alerted as CPU usage approaches and exceeds 80%. (Setting the lower bound to `NA` lets the anomalyzer know that we don't care if usage stays low.)
+Consider the case of monitoring CPU usage. Let's assume we collect a new point every 30 seconds.  We choose `ActiveSize` to be 2 and `NSeasons` to be 59, to allow us to compare activity in the past minute to the past hour. We also choose an `UpperBound` of 80, which allows us to make sure that we are alerted as CPU usage approaches and exceeds 80%. (Setting the lower bound to `NA` lets the anomalyzer know that we don't care if usage stays low.) The [algorithms](https://github.com/lytics/anomalyzer/tree/master/anomalyzer#algorithms) applied were **ks** and **high rank**. (See EXAMPLES.md file in anomalyzer repository for more detailed analysis.)
 
-The [algorithms](https://github.com/lytics/anomalyzer/tree/master/anomalyzer#algorithms) applied were **ks** and **high rank**. (See EXAMPLES.md file in anomalyzer repository for more detailed analysis.)
-
-After grabbing new data using `Get`, the underlying data can be updated using `Update`. The `Eval` function returns a probability that behavior in the active window is anomalous by accessing the Anomalyzer package.
-
-## Example
 ``` go
 package main
 
