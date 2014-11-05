@@ -1,5 +1,7 @@
 # Anomalyzer
 
+[![Build Status](https://travis-ci.org/lytics/anomalyzer.svg?branch=master)](https://travis-ci.org/lytics/anomalyzer) [![GoDoc](https://godoc.org/github.com/lytics/anomalyzer?status.svg)](https://godoc.org/github.com/lytics/anomalyzer)
+
 Probability-based anomaly detection in Go.
 
 ## Windows
