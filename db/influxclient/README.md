@@ -7,7 +7,7 @@ Grab timeseries data from InfluxDB using the [Go client library](http://github.c
 
 InfluxDB is a time series database written in Go. In order to get started accessing a database, the `Host`, `Username`, `Password`, and `Database` need to be specified in an `influx.ClientConfig` so that a client can be created.
 
-The client created can then be used to query a specific `Table` using [InfluxDB's query language](http://influxdb.com/docs/v0.7/api/query_language.html). Additionally, sensitivity, upper and lower bounds, active window length, and number of seasons need to be specified in order to run the anomalyzer package. Granularity and an aggregate function are optional arguments, which when both specified add a ["group by"](http://influxdb.com/docs/v0.8/api/query_language.html#group-by) clause to the query.
+The client created can then be used to query a specific `Table` using [InfluxDB's query language](http://influxdb.com/docs/v0.7/api/query_language.html). Additionally, `Sensitivity`, `UpperBound`, `LowerBound`, `ActiveSize`, and `NSeasons` need to be specified in order to run the anomalyzer package. Granularity and an aggregate function are optional arguments, which when both specified add a ["group by"](http://influxdb.com/docs/v0.8/api/query_language.html#group-by) clause to the query.
 
 To grab new data, the `Get` function can be used. It queries the database for the most recent points (to avoid scanning a large set of data). The number of points selected depends on `ActiveSize` and `NSeasons`.
 
