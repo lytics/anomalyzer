@@ -242,9 +242,9 @@ func MagnitudeTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	if refMean == 0 {
 		return 1
 	}
-
 	pdiff := math.Abs(activeMean-refMean) / refMean
-	return weightExp(pdiff, 10)
+	//return weightExp(pdiff, 10)
+	return pdiff
 }
 
 // Calculate a Kolmogorov-Smirnov test statistic.

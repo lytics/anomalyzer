@@ -139,22 +139,35 @@ func (a *Anomalyzer) Push(x float64) float64 {
 // for anomaly detection, which yields the probability that
 // the currently observed behavior is anomalous.
 func (a Anomalyzer) Eval() float64 {
-
-	probs := make(govector.Vector, 0, len(a.Conf.Methods))
-	weights := make(govector.Vector, 0, len(a.Conf.Methods))
-
+	probmap := make(map[string]float64)
 	for _, method := range a.Conf.Methods {
+
 		algorithm := Algorithms[method]
 		prob := cap(algorithm(a.Data, *a.Conf), 0, 1)
-		//fmt.Printf("%s: %v\n", method, prob)
+
+		if prob != NA {
+			// if highrank and lowrank methods exist then only listen to
+			// the max of either
+			if method == "highrank" || method == "lowrank" {
+				if math.IsNaN(probmap["rank"]) {
+					probmap["rank"] = 0
+				}
+				probmap["rank"] = math.Max(probmap["rank"], prob)
+			} else {
+				probmap[method] = prob
+			}
+		}
+	}
+
+	probs := make(govector.Vector, 0, len(probmap))
+	weights := make(govector.Vector, 0, len(probmap))
+
+	for method, prob := range probmap {
 		if method == "magnitude" && prob < a.Conf.Sensitivity {
 			return 0.0
 		}
-
-		if prob != NA {
-			probs = append(probs, prob)
-			weights = append(weights, a.getWeight(method, prob))
-		}
+		probs = append(probs, prob)
+		weights = append(weights, a.getWeight(method, prob))
 	}
 
 	// ignore the error since we force the length of probs
@@ -182,7 +195,7 @@ func (a Anomalyzer) getWeight(name string, prob float64) float64 {
 	// If they do, we upweight them substantially.
 	if exists(name, dynamicWeights) {
 		if prob > 0.8 {
-			weight = 1.0
+			weight = 5.0
 		} else {
 			weight = 0.0
 		}
