@@ -21,7 +21,7 @@ Ranks the values themselves in the reference and active windows and computes how
 
 Considers the percentage difference between the averages of data in the active and reference windows. Since this probability is dynamically weighted, the result of the magnitude test is significantly down-weighted when it returns less than 80%, and is significantly up-weighted for results greater than 80%. Since this test considers the percentage change, it's a good measure of significant changes and is generally a good default.
 
-Note that since it considers the averages over active and reference windows, keeping your active window smaller makes this test more sensitive. Additionally if the number of seasons specified is fairly long and your data has a history of prolonged increases or decreases, then an increase in your active window might not be perceived as significant.
+Note that since it considers the averages over active and reference windows, keeping your active window smaller makes this test more sensitive. Additionally if the number of seasons specified is fairly long and your data has a history of prolonged increases or decreases, an increase in your active window might not be perceived as significant.
 
 ### Fence
 
