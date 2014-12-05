@@ -144,7 +144,6 @@ func (a Anomalyzer) Eval() float64 {
 
 		algorithm := Algorithms[method]
 		prob := cap(algorithm(a.Data, *a.Conf), 0, 1)
-
 		if prob != NA {
 			// if highrank and lowrank methods exist then only listen to
 			// the max of either
@@ -182,6 +181,36 @@ func (a Anomalyzer) Eval() float64 {
 	}
 
 	return weighted
+}
+
+// Get the results and weights of each test. Useful for debugging
+func (a Anomalyzer) EvalByTest() (map[string]float64, map[string]float64) {
+	probmap := make(map[string]float64)
+	for _, method := range a.Conf.Methods {
+
+		algorithm := Algorithms[method]
+		prob := cap(algorithm(a.Data, *a.Conf), 0, 1)
+		//fmt.Printf("%v: %v\n", method, prob)
+		if prob != NA {
+			// if highrank and lowrank methods exist then only listen to
+			// the max of either
+			if method == "highrank" || method == "lowrank" {
+				if math.IsNaN(probmap["rank"]) {
+					probmap["rank"] = 0
+				}
+				probmap["rank"] = math.Max(probmap["rank"], prob)
+			} else {
+				probmap[method] = prob
+			}
+		}
+	}
+
+	weightmap := make(map[string]float64, len(probmap))
+	for method, prob := range probmap {
+		weightmap[method] = a.getWeight(method, prob)
+	}
+
+	return probmap, weightmap
 }
 
 // Use essentially similar weights.  However, if either the magnitude
