@@ -240,7 +240,11 @@ func MagnitudeTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	// If the baseline is 0, then the magnitude should be Inf, but we'll
 	// round to 1.
 	if refMean == 0 {
-		return 1
+		if activeMean == 0 {
+			return 0
+		} else {
+			return 1
+		}
 	}
 	pdiff := math.Abs(activeMean-refMean) / refMean
 	//return weightExp(pdiff, 10)
