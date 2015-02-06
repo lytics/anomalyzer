@@ -190,6 +190,7 @@ func (a Anomalyzer) EvalByTest() (map[string]float64, map[string]float64) {
 
 		algorithm := Algorithms[method]
 		prob := cap(algorithm(a.Data, *a.Conf), 0, 1)
+		//fmt.Printf("%v: %v\n", method, prob)
 		if prob != NA {
 			// if highrank and lowrank methods exist then only listen to
 			// the max of either
@@ -225,7 +226,7 @@ func (a Anomalyzer) getWeight(name string, prob float64) float64 {
 		if prob > 0.8 {
 			weight = 5.0
 		} else {
-			weight = 0.5
+			weight = 0.0
 		}
 	}
 
