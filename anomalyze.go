@@ -12,6 +12,7 @@ const (
 )
 
 type AnomalyzerConf struct {
+	Delay         bool
 	Sensitivity   float64
 	UpperBound    float64
 	LowerBound    float64
@@ -45,6 +46,9 @@ func validateConf(conf *AnomalyzerConf) error {
 	if conf.NSeasons == 0 {
 		conf.NSeasons = 4
 	}
+
+	// if delay is not specified, default to false. this means calculations
+	// of anomalousness will be returned as soon as we can
 
 	// make reference window some multiple of the active window size
 	conf.referenceSize = conf.NSeasons * conf.ActiveSize
@@ -139,6 +143,10 @@ func (a *Anomalyzer) Push(x float64) float64 {
 // for anomaly detection, which yields the probability that
 // the currently observed behavior is anomalous.
 func (a Anomalyzer) Eval() float64 {
+	threshold := a.Conf.referenceSize + a.Conf.ActiveSize
+	if a.Conf.Delay && len(a.Data) < threshold {
+		return 0.0
+	}
 	probmap := make(map[string]float64)
 	for _, method := range a.Conf.Methods {
 
