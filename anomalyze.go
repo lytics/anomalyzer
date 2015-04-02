@@ -30,7 +30,7 @@ type Anomalyzer struct {
 
 func validateConf(conf *AnomalyzerConf) error {
 	// if supplied, make sure the detection methods are supported
-	supportedMethods := []string{"magnitude", "diff", "highrank", "lowrank", "fence", "ks", "cdf"}
+	supportedMethods := []string{"magnitude", "diff", "highrank", "lowrank", "fence", "ks", "cdf", "threesigma"}
 	minimumMethods := []string{"magnitude", "ks"}
 	if conf.Methods == nil {
 		conf.Methods = minimumMethods

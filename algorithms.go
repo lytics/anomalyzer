@@ -2,21 +2,23 @@ package anomalyzer
 
 import (
 	"fmt"
-	"github.com/drewlanenga/govector"
 	"math"
+
+	"github.com/drewlanenga/govector"
 )
 
 type Algorithm func(govector.Vector, AnomalyzerConf) float64
 
 var (
 	Algorithms = map[string]Algorithm{
-		"magnitude": MagnitudeTest,
-		"diff":      DiffTest,
-		"highrank":  RankTest,
-		"lowrank":   ReverseRankTest,
-		"cdf":       CDFTest,
-		"fence":     FenceTest,
-		"ks":        BootstrapKsTest,
+		"magnitude":  MagnitudeTest,
+		"diff":       DiffTest,
+		"highrank":   RankTest,
+		"lowrank":    ReverseRankTest,
+		"cdf":        CDFTest,
+		"fence":      FenceTest,
+		"ks":         BootstrapKsTest,
+		"threesigma": ThreeSigma,
 	}
 )
 
@@ -137,6 +139,25 @@ func DiffTest(vector govector.Vector, conf AnomalyzerConf) float64 {
 	// We return the percentage of the number of iterations where we found our initial
 	// sum to be high.
 	return float64(significant) / float64(conf.PermCount)
+}
+
+func ThreeSigma(vector govector.Vector, conf AnomalyzerConf) float64 {
+	reference, active, err := extractWindows(vector, conf.referenceSize, conf.ActiveSize, conf.ActiveSize)
+	if err != nil {
+		return NA
+	}
+
+	mu := reference.Mean()
+	sigma := reference.Sd()
+	x := active.Mean()
+	val := math.Abs(x-mu) / sigma
+
+	return PNormal(val, 0, 1)
+}
+
+// PNormal returns the cumulative density of a normal distribution given input x.
+func PNormal(x, mu, sigma float64) float64 {
+	return .5 * (1 + math.Erf((x-mu)/(sigma*math.Sqrt(2))))
 }
 
 func RankTest(vector govector.Vector, conf AnomalyzerConf) float64 {
