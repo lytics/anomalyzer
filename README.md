@@ -40,7 +40,7 @@ To capture seasonality, the bootstrap ks test should consider an active window l
 
 ### Fence
 
-The fence test can be configured to use custom `UpperBound` and `LowerBound` values for the fences.  If no lower bound is desired, set the value of `LowerBound` to `anomalyzer.NA`.
+The fence test can be configured to use custom `UpperBound` and `LowerBound` values for the fences.  If no lower bound is desired, set the value of `LowerBound` to the const variable: `anomalyzer.NA`.
 
 ### Diff & Rank
 
