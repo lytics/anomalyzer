@@ -81,7 +81,7 @@ func main() {
   // PushFixed method will keep the size of the Data vector constant.
   // Oldest data points will be evicted as points are added.
   // WARNING: Mixing Push() and PushFixed() will result in failure!
-	anom2, _ := anomalyzer.NewAnomalyzer(conf, data)
+  anom2, _ := anomalyzer.NewAnomalyzer(conf, data)
   prob2, _ := anom2.PushFixed(8.0)
   // returns an error as second value if the array size changed unexpectantly 
 	fmt.Println("Anomalous Probability:", prob2)
