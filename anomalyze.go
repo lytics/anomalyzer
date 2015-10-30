@@ -139,12 +139,15 @@ func (a *Anomalyzer) Push(x float64) float64 {
 	return a.Eval()
 }
 
-func (a *Anomalyzer) PushFixed(x float64) float64 {
+func (a *Anomalyzer) PushFixed(x float64) (float64, error) {
 	// Add data to fixed size array which will not grow
-	a.Data.PushFixed(x)
+	err := a.Data.PushFixed(x)
+	if err != nil {
+		return NA, err
+	}
 
 	// evaluate the anomalous probability
-	return a.Eval()
+	return a.Eval(), nil
 }
 
 // Return the weighted average of all statistical tests

@@ -61,10 +61,11 @@ func TestAnomalyzerPushFixed(t *testing.T) {
 	anomalyzer, err := NewAnomalyzer(conf, data)
 	assert.Equal(t, nil, err, "Error initializing new anomalyzer")
 
-	prob := anomalyzer.PushFixed(8.0)
-	prob = anomalyzer.PushFixed(10.0)
-	prob = anomalyzer.PushFixed(8.0)
-	prob = anomalyzer.PushFixed(9.0)
+	prob, err := anomalyzer.PushFixed(8.0)
+	prob, err = anomalyzer.PushFixed(10.0)
+	prob, err = anomalyzer.PushFixed(8.0)
+	prob, err = anomalyzer.PushFixed(9.0)
+	assert.Equal(t, err, nil, "There was an error with array size")
 	assert.Tf(t, prob > 0.5, "Anomalyzer returned a probability that was too small")
 	assert.Equal(t, len(anomalyzer.Data), 6, "Array size did not stay at original size")
 }
