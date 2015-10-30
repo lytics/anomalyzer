@@ -45,6 +45,30 @@ func TestAnomalyzer(t *testing.T) {
 	assert.Tf(t, prob > 0.5, "Anomalyzer returned a probability that was too small")
 }
 
+func TestAnomalyzerPushFixed(t *testing.T) {
+	conf := &AnomalyzerConf{
+		Sensitivity: 0.1,
+		UpperBound:  5,
+		LowerBound:  0,
+		ActiveSize:  1,
+		NSeasons:    4,
+		Methods:     []string{"cdf", "fence", "highrank", "lowrank", "magnitude"},
+	}
+
+	// initialize with empty data or an actual slice of floats
+	data := []float64{0.1, 2.05, 1.5, 2.5, 2.6, 2.55}
+
+	anomalyzer, err := NewAnomalyzer(conf, data)
+	assert.Equal(t, nil, err, "Error initializing new anomalyzer")
+
+	prob := anomalyzer.PushFixed(8.0)
+	prob = anomalyzer.PushFixed(10.0)
+	prob = anomalyzer.PushFixed(8.0)
+	prob = anomalyzer.PushFixed(9.0)
+	assert.Tf(t, prob > 0.5, "Anomalyzer returned a probability that was too small")
+	assert.Equal(t, len(anomalyzer.Data), 6, "Array size did not stay at original size")
+}
+
 func Example() {
 	conf := &AnomalyzerConf{
 		Sensitivity: 0.1,
