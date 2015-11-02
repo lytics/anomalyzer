@@ -4,6 +4,8 @@
 
 Probabilistic anomaly detection in Go.
 
+Featured on [Hacker News](https://news.ycombinator.com/item?id=10055977) August 13th, 2015 and the [Lytics Developer Blog](https://www.getlytics.com/developers/blog/post/check_out_anomalyzer).
+
 ## Windows
 
 Inspired by Etsy's [Skyline](https://github.com/etsy/skyline) package, Anomalyzer implements a suite of statistical tests that yield the probability that a given set of numeric input, typically a time series, contains anomalous behavior.  Each test compares the behavior in an **active window** of one or more points to the behavior in a **reference window** of two or more points.
