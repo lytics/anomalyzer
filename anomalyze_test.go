@@ -25,6 +25,23 @@ func randomWalk(nsteps int, start float64, sd float64) (govector.Vector, error) 
 	return walk, nil
 }
 
+func TestConfSetup(t *testing.T) {
+	conf := &AnomalyzerConf{
+		Sensitivity: 0.1,
+		UpperBound:  5,
+		LowerBound:  0,
+		ActiveSize:  1,
+		NSeasons:    4,
+		Methods:     []string{"cdf", "fence", "highrank", "lowrank", "magnitude"},
+	}
+	anomalyzer, err := NewAnomalyzer(conf, []float64{})
+	assert.Equal(t, nil, err, "Error initializing new anomalyzer")
+	if anomalyzer.Conf.VectorCap < 10000000 {
+		//VectorCap should be the maximum integer
+		t.Errorf("VectorCap set incorrectly: %#v", anomalyzer.Conf.VectorCap)
+	}
+}
+
 func TestAnomalyzer(t *testing.T) {
 	conf := &AnomalyzerConf{
 		Sensitivity: 0.1,
@@ -43,6 +60,30 @@ func TestAnomalyzer(t *testing.T) {
 
 	prob := anomalyzer.Push(8.0)
 	assert.Tf(t, prob > 0.5, "Anomalyzer returned a probability that was too small")
+}
+
+func TestAnomalyzerCapped(t *testing.T) {
+	conf := &AnomalyzerConf{
+		Sensitivity: 0.1,
+		UpperBound:  5,
+		LowerBound:  0,
+		ActiveSize:  1,
+		NSeasons:    4,
+		Methods:     []string{"cdf", "fence", "highrank", "lowrank", "magnitude"},
+		VectorCap:   6,
+	}
+
+	// initialize with empty data or an actual slice of floats
+	data := []float64{0.1, 2.05, 1.5, 2.5, 2.6, 2.55}
+
+	anomalyzer, err := NewAnomalyzer(conf, data)
+	assert.Equal(t, nil, err, "Error initializing new anomalyzer")
+
+	prob := anomalyzer.Push(8.0)
+	prob = anomalyzer.Push(8.0)
+	prob = anomalyzer.Push(8.0)
+	assert.Tf(t, prob > 0.5, "Anomalyzer returned a probability that was too small")
+	assert.Equal(t, len(anomalyzer.Data), anomalyzer.Conf.VectorCap)
 }
 
 func TestAnomalyzerPushFixed(t *testing.T) {
@@ -78,6 +119,7 @@ func TestAnomalyzerPushMixed(t *testing.T) {
 		ActiveSize:  1,
 		NSeasons:    4,
 		Methods:     []string{"cdf", "fence", "highrank", "lowrank", "magnitude"},
+		VectorCap:   8,
 	}
 
 	// initialize with empty data or an actual slice of floats

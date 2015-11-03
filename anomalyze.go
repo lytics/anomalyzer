@@ -21,6 +21,7 @@ type AnomalyzerConf struct {
 	NSeasons      int
 	PermCount     int
 	Methods       []string
+	VectorCap     int
 }
 
 type Anomalyzer struct {
@@ -86,6 +87,11 @@ func validateConf(conf *AnomalyzerConf) error {
 		}
 	}
 
+	// if VectorCap is not set to contain any data, set it to maximum integer size
+	if conf.VectorCap == 0 {
+		conf.VectorCap = int(^uint(0) >> 1)
+	}
+
 	return nil
 }
 
@@ -133,13 +139,21 @@ func (a *Anomalyzer) Update(x []float64) {
 
 func (a *Anomalyzer) Push(x float64) float64 {
 	// add the new point to the data
-	a.Data.Push(x)
+	if len(a.Data) < a.Conf.VectorCap {
+		a.Data.Push(x)
+	} else {
+		err := a.Data.PushFixed(x)
+		if err != nil {
+			//TODO: This function should be modified to return the error
+			return NA
+		}
+	}
 
 	// evaluate the anomalous probability
 	return a.Eval()
 }
 
-// WARNING: Mixing Push() and PushFixed() will result in failure!
+// Keep the size of the array constant with PushFixed
 func (a *Anomalyzer) PushFixed(x float64) (float64, error) {
 	// Add data to fixed size array which will not grow
 	err := a.Data.PushFixed(x)
