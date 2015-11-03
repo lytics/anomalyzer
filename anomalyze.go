@@ -139,18 +139,28 @@ func (a *Anomalyzer) Update(x []float64) {
 
 func (a *Anomalyzer) Push(x float64) float64 {
 	// add the new point to the data
+	a.Data.Push(x)
+
+	// evaluate the anomalous probability
+	return a.Eval()
+}
+
+//PushCapped will grow the data vector until the specified
+// VectorCap conf variable is hit; then will roll new values
+// into the array and a evict the oldest values.
+func (a *Anomalyzer) PushCapped(x float64) (float64, error) {
+	// add the new point to the data
 	if len(a.Data) < a.Conf.VectorCap {
 		a.Data.Push(x)
 	} else {
 		err := a.Data.PushFixed(x)
 		if err != nil {
-			//TODO: This function should be modified to return the error
-			return NA
+			return NA, err
 		}
 	}
 
 	// evaluate the anomalous probability
-	return a.Eval()
+	return a.Eval(), nil
 }
 
 // Keep the size of the array constant with PushFixed

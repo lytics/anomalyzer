@@ -79,9 +79,9 @@ func TestAnomalyzerCapped(t *testing.T) {
 	anomalyzer, err := NewAnomalyzer(conf, data)
 	assert.Equal(t, nil, err, "Error initializing new anomalyzer")
 
-	prob := anomalyzer.Push(8.0)
-	prob = anomalyzer.Push(8.0)
-	prob = anomalyzer.Push(8.0)
+	prob, err := anomalyzer.PushCapped(8.0)
+	prob, err = anomalyzer.PushCapped(8.0)
+	prob, err = anomalyzer.PushCapped(8.0)
 	assert.Tf(t, prob > 0.5, "Anomalyzer returned a probability that was too small")
 	assert.Equal(t, len(anomalyzer.Data), anomalyzer.Conf.VectorCap)
 }
@@ -128,15 +128,17 @@ func TestAnomalyzerPushMixed(t *testing.T) {
 	anomalyzer, err := NewAnomalyzer(conf, data)
 	assert.Equal(t, nil, err, "Error initializing new anomalyzer")
 
-	prob, err := anomalyzer.PushFixed(8.0)
+	prob, err := anomalyzer.PushFixed(8.5)
 	prob = anomalyzer.Push(10.0)
 	prob, err = anomalyzer.PushFixed(8.0)
 	prob = anomalyzer.Push(9.0)
+	prob, err = anomalyzer.PushCapped(9.0)
+	prob, err = anomalyzer.PushCapped(19.0)
 	assert.Equal(t, err, nil, "There was an error with mixing array extension")
 	assert.Tf(t, prob > 0.5, "Anomalyzer returned a probability that was too small")
 	assert.Equal(t, len(anomalyzer.Data), 8, "Array size Push* functions failed to grow Data to expected size")
-	assert.Equal(t, anomalyzer.Data[7], 9.0)
-	assert.Equal(t, anomalyzer.Data[0], 1.5, "Two values were appended, two values were popped from the array. 3rd original element should be tail.")
+	assert.Equal(t, anomalyzer.Data[7], 19.0)
+	assert.Equal(t, anomalyzer.Data[0], 2.6, "Two values were appended, two values were popped from the array. 3rd original element should be tail.")
 }
 
 func Example() {
