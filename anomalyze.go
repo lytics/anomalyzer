@@ -139,7 +139,6 @@ func (a *Anomalyzer) Push(x float64) float64 {
 	return a.Eval()
 }
 
-// WARNING: Mixing Push() and PushFixed() will result in failure!
 func (a *Anomalyzer) PushFixed(x float64) (float64, error) {
 	// Add data to fixed size array which will not grow
 	err := a.Data.PushFixed(x)
