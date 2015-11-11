@@ -45,6 +45,58 @@ func TestAnomalyzer(t *testing.T) {
 	assert.Tf(t, prob > 0.5, "Anomalyzer returned a probability that was too small")
 }
 
+func TestAnomalyzerPushFixed(t *testing.T) {
+	conf := &AnomalyzerConf{
+		Sensitivity: 0.1,
+		UpperBound:  5,
+		LowerBound:  0,
+		ActiveSize:  1,
+		NSeasons:    4,
+		Methods:     []string{"cdf", "fence", "highrank", "lowrank", "magnitude"},
+	}
+
+	// initialize with empty data or an actual slice of floats
+	data := []float64{0.1, 2.05, 1.5, 2.5, 2.6, 2.55}
+
+	anomalyzer, err := NewAnomalyzer(conf, data)
+	assert.Equal(t, nil, err, "Error initializing new anomalyzer")
+
+	prob, err := anomalyzer.PushFixed(8.0)
+	prob, err = anomalyzer.PushFixed(10.0)
+	prob, err = anomalyzer.PushFixed(8.0)
+	prob, err = anomalyzer.PushFixed(9.0)
+	assert.Equal(t, err, nil, "There was an error with array size")
+	assert.Tf(t, prob > 0.5, "Anomalyzer returned a probability that was too small")
+	assert.Equal(t, len(anomalyzer.Data), 6, "Array size did not stay at original size")
+}
+
+func TestAnomalyzerPushMixed(t *testing.T) {
+	conf := &AnomalyzerConf{
+		Sensitivity: 0.1,
+		UpperBound:  5,
+		LowerBound:  0,
+		ActiveSize:  1,
+		NSeasons:    4,
+		Methods:     []string{"cdf", "fence", "highrank", "lowrank", "magnitude"},
+	}
+
+	// initialize with empty data or an actual slice of floats
+	data := []float64{0.1, 2.05, 1.5, 2.5, 2.6, 2.55}
+
+	anomalyzer, err := NewAnomalyzer(conf, data)
+	assert.Equal(t, nil, err, "Error initializing new anomalyzer")
+
+	prob, err := anomalyzer.PushFixed(8.0)
+	prob = anomalyzer.Push(10.0)
+	prob, err = anomalyzer.PushFixed(8.0)
+	prob = anomalyzer.Push(9.0)
+	assert.Equal(t, err, nil, "There was an error with mixing array extension")
+	assert.Tf(t, prob > 0.5, "Anomalyzer returned a probability that was too small")
+	assert.Equal(t, len(anomalyzer.Data), 8, "Array size Push* functions failed to grow Data to expected size")
+	assert.Equal(t, anomalyzer.Data[7], 9.0)
+	assert.Equal(t, anomalyzer.Data[0], 1.5, "Two values were appended, two values were popped from the array. 3rd original element should be tail.")
+}
+
 func Example() {
 	conf := &AnomalyzerConf{
 		Sensitivity: 0.1,

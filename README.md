@@ -42,7 +42,7 @@ To capture seasonality, the bootstrap ks test should consider an active window l
 
 ### Fence
 
-The fence test can be configured to use custom `UpperBound` and `LowerBound` values for the fences.  If no lower bound is desired, set the value of `LowerBound` to `anomalyzer.NA`.
+The fence test can be configured to use custom `UpperBound` and `LowerBound` values for the fences.  If no lower bound is desired, set the value of `LowerBound` to the const variable: `anomalyzer.NA`.
 
 ### Diff & Rank
 
@@ -79,6 +79,13 @@ func main() {
 	// by a call to the Eval method.
 	prob := anom.Push(8.0)
 	fmt.Println("Anomalous Probability:", prob)
+
+  // PushFixed method will keep the size of the Data vector constant.
+  // Oldest data points will be evicted as points are added.
+  anom2, _ := anomalyzer.NewAnomalyzer(conf, data)
+	prob2, _ := anom2.PushFixed(8.0)
+	// returns an error as second value if the array size changed unexpectantly
+	fmt.Println("Anomalous Probability:", prob2)
 }
 ```
 
